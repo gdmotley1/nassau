@@ -10,14 +10,14 @@ import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
 import { RHButton, RHMoneyDisplay, RHSettlementCard, AceInsightCard } from '../../components';
 import { openVenmoPayment } from '../../services/settlementService';
-import { getPostRoundAnalysis, type PostRoundAnalysis } from '../../services/aceService';
+import { getPostRoundAnalysis, getPressReplay, type PostRoundAnalysis } from '../../services/aceService';
 import { hapticWinCelebration, hapticError } from '../../utils/haptics';
-import { formatPlayerName } from '../../utils/format';
+import { formatPlayerName, formatMoney } from '../../utils/format';
 import { useAcePaywall } from '../../hooks/useAcePaywall';
 import { AcePremiumGate } from '../../components/AcePremiumGate';
 import { getPlayerNetAmount, calculateNassauSettlements } from '../../engine/nassauCalculator';
 import type { HomeStackScreenProps } from '../../navigation/types';
-import type { NassauSettings, SettlementMethod } from '../../types';
+import type { NassauSettings, SettlementMethod, PressReplay } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -35,6 +35,7 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
   const { isPremium, openPaywall } = useAcePaywall();
   const confettiRef = useRef<ConfettiCannon>(null);
   const [postRound, setPostRound] = useState<PostRoundAnalysis | null>(null);
+  const [pressReplay, setPressReplay] = useState<PressReplay | null>(null);
   const [justPaidIds, setJustPaidIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -43,11 +44,14 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
     }
   }, [gameId]);
 
-  // Fetch post-round analysis from Ace (premium only)
+  // Fetch post-round analysis and press replay from Ace (premium only)
   useEffect(() => {
     if (user?.id && gameId && isPremium) {
       getPostRoundAnalysis(user.id, gameId).then((result) => {
         if (result.data) setPostRound(result.data);
+      });
+      getPressReplay(user.id, gameId).then((result) => {
+        if (result.data) setPressReplay(result.data);
       });
     }
   }, [user?.id, gameId, isPremium]);
@@ -303,6 +307,103 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
               )}
             </AcePremiumGate>
           </Animated.View>
+
+          {/* Ace Press Replay */}
+          <Animated.View entering={FadeInDown.duration(400).delay(700)}>
+            <AcePremiumGate
+              onUpgrade={openPaywall}
+              teaserText="Replay every press decision from this round"
+            >
+              {pressReplay && (
+                <>
+                  <Text style={[styles.sectionLabel, { color: theme.semantic.textSecondary }]}>
+                    PRESS REPLAY
+                  </Text>
+
+                  {pressReplay.totalPresses === 0 ? (
+                    <Text style={[replayStyles.noPresses, { color: theme.semantic.textSecondary }]}>
+                      No presses this round
+                    </Text>
+                  ) : (
+                    <>
+                      {/* Summary */}
+                      <View style={[replayStyles.summaryRow, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}>
+                        <Text style={[replayStyles.summaryText, { color: theme.semantic.textPrimary }]}>
+                          {pressReplay.totalPresses} press{pressReplay.totalPresses !== 1 ? 'es' : ''}: {pressReplay.pressesWon}W {pressReplay.pressesLost}L
+                        </Text>
+                        <Text
+                          style={[
+                            replayStyles.summaryNet,
+                            {
+                              color: pressReplay.netFromPresses >= 0
+                                ? theme.colors.green[500]
+                                : theme.colors.red[500],
+                            },
+                          ]}
+                        >
+                          {pressReplay.netFromPresses >= 0 ? '+' : ''}${Math.abs(pressReplay.netFromPresses).toFixed(0)}
+                        </Text>
+                      </View>
+
+                      {/* Timeline */}
+                      <View style={replayStyles.timeline}>
+                        {pressReplay.events.map((event, i) => {
+                          const nodeColor = event.outcome === 'won'
+                            ? theme.colors.green[500]
+                            : event.outcome === 'lost'
+                            ? theme.colors.red[500]
+                            : theme.colors.gray[500];
+
+                          return (
+                            <View key={i} style={replayStyles.timelineItem}>
+                              {/* Left connector */}
+                              <View style={replayStyles.connectorCol}>
+                                {i > 0 && (
+                                  <View style={[replayStyles.connectorLine, { backgroundColor: theme.colors.teal[500] + '40' }]} />
+                                )}
+                                <View style={[replayStyles.node, { backgroundColor: nodeColor }]} />
+                                {i < pressReplay.events.length - 1 && (
+                                  <View style={[replayStyles.connectorLineBottom, { backgroundColor: theme.colors.teal[500] + '40' }]} />
+                                )}
+                              </View>
+
+                              {/* Right content */}
+                              <View style={replayStyles.eventContent}>
+                                <Text style={[replayStyles.eventTitle, { color: theme.semantic.textPrimary }]}>
+                                  Hole {event.hole} — {event.region}
+                                </Text>
+                                <Text style={[replayStyles.eventDetail, { color: theme.semantic.textSecondary }]}>
+                                  {event.pressedBy} pressed ${event.amount}{event.margin > 0 ? ` (${event.margin} down)` : ''}
+                                </Text>
+                                <View style={[replayStyles.outcomeBadge, { backgroundColor: nodeColor + '18' }]}>
+                                  <Text style={[replayStyles.outcomeText, { color: nodeColor }]}>
+                                    {event.outcome === 'won' ? `Won +$${event.netResult}` : event.outcome === 'lost' ? `Lost -$${Math.abs(event.netResult)}` : 'Push'}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </>
+                  )}
+
+                  {/* What If card */}
+                  {pressReplay.missedOpportunities > 0 && (
+                    <View style={{ marginTop: 12 }}>
+                      <AceInsightCard
+                        variant="insight"
+                        headline="What If?"
+                        body={`You declined ${pressReplay.missedOpportunities} press${pressReplay.missedOpportunities !== 1 ? 'es' : ''} this round. If you'd taken them all, your estimated press net would be ${formatMoney(pressReplay.whatIfNet)}.`}
+                        stat={formatMoney(pressReplay.whatIfNet)}
+                        statLabel="est. net"
+                      />
+                    </View>
+                  )}
+                </>
+              )}
+            </AcePremiumGate>
+          </Animated.View>
         </ScrollView>
 
       {/* Win confetti */}
@@ -331,6 +432,80 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
     </SafeAreaView>
   );
 }
+
+const replayStyles = StyleSheet.create({
+  noPresses: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    marginBottom: 12,
+  },
+  summaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  summaryNet: {
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  timeline: {
+    paddingLeft: 4,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    minHeight: 60,
+  },
+  connectorCol: {
+    width: 24,
+    alignItems: 'center',
+  },
+  connectorLine: {
+    width: 2,
+    flex: 1,
+  },
+  connectorLineBottom: {
+    width: 2,
+    flex: 1,
+  },
+  node: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  eventContent: {
+    flex: 1,
+    paddingLeft: 12,
+    paddingBottom: 16,
+  },
+  eventTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  eventDetail: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  outcomeBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  outcomeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

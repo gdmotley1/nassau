@@ -46,4 +46,9 @@ export type {
   CoursePerformance,
   PressAnalytics,
   ScoringTrends,
+  CourseScouting,
+  PressReplayEvent,
+  PressReplay,
+  LeaderboardEntry,
+  GroupLeaderboard,
 } from './database';

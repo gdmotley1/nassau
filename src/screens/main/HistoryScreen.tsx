@@ -8,7 +8,7 @@ import {
   Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { SlideInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore, useGameStore } from '../../stores';
 import { RHCard } from '../../components/RHCard';
@@ -155,10 +155,7 @@ export function HistoryScreen({ navigation }: HistoryStackScreenProps<'HistoryLi
           games.map((game, index) => (
             <Animated.View
               key={game.id}
-              entering={SlideInUp.delay(index * 60)
-                .springify()
-                .damping(18)
-                .stiffness(120)}
+              entering={FadeInDown.duration(400).delay(index * 80)}
             >
               <RHCard
                 onPress={() => {

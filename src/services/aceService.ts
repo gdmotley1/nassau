@@ -20,6 +20,11 @@ import type {
   ScoringTrends,
   HandicapHistoryRow,
   AceInteractionType,
+  CourseScouting,
+  PressReplayEvent,
+  PressReplay,
+  LeaderboardEntry,
+  GroupLeaderboard,
 } from '../types';
 
 // ─── Head-to-Head Matchup Report ──────────────────────────────
@@ -932,6 +937,474 @@ export async function getPostRoundAnalysis(
         missedPressOpportunities,
         keyMoments,
         comparisonToAverage,
+      },
+    };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
+// ─── Course Scouting Report ──────────────────────────────────
+
+/**
+ * Get a detailed course scouting report for pre-round preparation.
+ * Shows hole-by-hole performance, danger/opportunity holes, and par type stats.
+ */
+export async function getCourseScouting(
+  userId: string,
+  courseName: string,
+): Promise<{ data?: CourseScouting; error?: string }> {
+  try {
+    const { data: userPlayerRows } = await supabase
+      .from('game_players')
+      .select('game_id, id')
+      .eq('user_id', userId);
+
+    if (!userPlayerRows || userPlayerRows.length === 0) return { error: 'No games found' };
+
+    const gameIds = userPlayerRows.map((r: any) => r.game_id);
+    const playerIdMap = new Map<string, string>();
+    userPlayerRows.forEach((r: any) => playerIdMap.set(r.game_id, r.id));
+
+    // Fetch completed games at this course
+    const [gamesRes, scoresRes] = await Promise.all([
+      supabase
+        .from('games')
+        .select('*')
+        .in('id', gameIds)
+        .eq('status', 'completed')
+        .ilike('course_name', courseName),
+      supabase
+        .from('scores')
+        .select('*')
+        .in('game_id', gameIds),
+    ]);
+
+    const games = (gamesRes.data ?? []) as unknown as GameRow[];
+    const allScores = (scoresRes.data ?? []) as unknown as ScoreRow[];
+
+    if (games.length === 0) return { error: 'No rounds at this course' };
+
+    // Collect user's scores at this course
+    const courseScores: ScoreRow[] = [];
+    const roundTotals: number[] = [];
+
+    for (const game of games) {
+      const playerId = playerIdMap.get(game.id);
+      if (!playerId) continue;
+      const playerScores = allScores.filter(
+        (s) => s.game_id === game.id && s.player_id === playerId,
+      );
+      courseScores.push(...playerScores);
+      if (playerScores.length > 0) {
+        roundTotals.push(playerScores.reduce((sum, s) => sum + s.strokes, 0));
+      }
+    }
+
+    if (courseScores.length === 0) return { error: 'No scores found' };
+
+    // Use pars from the most recent game
+    const latestGame = games[0];
+    const settings = (latestGame as any).settings as NassauSettings & { type: string };
+    const pars = settings.hole_pars ?? Array(18).fill(4);
+
+    // Per-hole breakdown
+    const holeMap = new Map<number, { total: number; count: number; best: number; worst: number }>();
+
+    for (const score of courseScores) {
+      const existing = holeMap.get(score.hole_number) ?? {
+        total: 0,
+        count: 0,
+        best: Infinity,
+        worst: -Infinity,
+      };
+      existing.total += score.strokes;
+      existing.count++;
+      existing.best = Math.min(existing.best, score.strokes);
+      existing.worst = Math.max(existing.worst, score.strokes);
+      holeMap.set(score.hole_number, existing);
+    }
+
+    const holeBreakdown = Array.from(holeMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([holeNumber, data]) => {
+        const par = pars[holeNumber - 1] ?? 4;
+        const avgStrokes = data.count > 0 ? data.total / data.count : 0;
+        return {
+          holeNumber,
+          par,
+          avgStrokes: Math.round(avgStrokes * 100) / 100,
+          differential: Math.round((avgStrokes - par) * 100) / 100,
+          bestScore: data.best === Infinity ? 0 : data.best,
+          worstScore: data.worst === -Infinity ? 0 : data.worst,
+        };
+      });
+
+    // Danger holes (top 3 worst vs par)
+    const sortedByDanger = [...holeBreakdown]
+      .filter((h) => h.differential > 0)
+      .sort((a, b) => b.differential - a.differential);
+    const dangerHoles = sortedByDanger.slice(0, 3).map((h) => h.holeNumber);
+
+    // Opportunity holes (top 3 best vs par)
+    const sortedByOpportunity = [...holeBreakdown]
+      .filter((h) => h.differential < 0)
+      .sort((a, b) => a.differential - b.differential);
+    const opportunityHoles = sortedByOpportunity.slice(0, 3).map((h) => h.holeNumber);
+
+    // Par type averages
+    const parTypeMap = new Map<number, { total: number; count: number }>();
+    for (const score of courseScores) {
+      const par = pars[score.hole_number - 1] ?? 4;
+      const existing = parTypeMap.get(par) ?? { total: 0, count: 0 };
+      existing.total += score.strokes;
+      existing.count++;
+      parTypeMap.set(par, existing);
+    }
+
+    const par3Data = parTypeMap.get(3);
+    const par4Data = parTypeMap.get(4);
+    const par5Data = parTypeMap.get(5);
+
+    // Front vs Back
+    const frontScores = courseScores.filter((s) => s.hole_number <= 9);
+    const backScores = courseScores.filter((s) => s.hole_number > 9);
+    const frontAvg = frontScores.length > 0
+      ? frontScores.reduce((s, sc) => s + sc.strokes, 0) / frontScores.length * 9
+      : 0;
+    const backAvg = backScores.length > 0
+      ? backScores.reduce((s, sc) => s + sc.strokes, 0) / backScores.length * 9
+      : 0;
+
+    return {
+      data: {
+        courseName: latestGame.course_name ?? courseName,
+        roundsPlayed: games.length,
+        averageScore: roundTotals.length > 0
+          ? roundTotals.reduce((a, b) => a + b, 0) / roundTotals.length
+          : 0,
+        bestScore: roundTotals.length > 0 ? Math.min(...roundTotals) : 0,
+        holeBreakdown,
+        dangerHoles,
+        opportunityHoles,
+        par3Avg: par3Data && par3Data.count > 0 ? par3Data.total / par3Data.count : 0,
+        par4Avg: par4Data && par4Data.count > 0 ? par4Data.total / par4Data.count : 0,
+        par5Avg: par5Data && par5Data.count > 0 ? par5Data.total / par5Data.count : 0,
+        frontVsBack: {
+          front: Math.round(frontAvg * 10) / 10,
+          back: Math.round(backAvg * 10) / 10,
+        },
+      },
+    };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
+// ─── Press Replay ────────────────────────────────────────────
+
+/**
+ * Get a press replay timeline for a completed game.
+ * Shows every press event with outcomes, plus "what if" analysis.
+ */
+export async function getPressReplay(
+  userId: string,
+  gameId: string,
+): Promise<{ data?: PressReplay; error?: string }> {
+  try {
+    // Get game and user's player info
+    const { data: game } = await supabase
+      .from('games')
+      .select('*')
+      .eq('id', gameId)
+      .single();
+
+    if (!game) return { error: 'Game not found' };
+
+    const { data: playerRow } = await supabase
+      .from('game_players')
+      .select('id')
+      .eq('game_id', gameId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!playerRow) return { error: 'Player not found in game' };
+
+    const myPlayerId = (playerRow as any).id as string;
+
+    // Get all players with names
+    const { data: gamePlayers } = await supabase
+      .from('game_players')
+      .select('id, user_id, guest_name')
+      .eq('game_id', gameId);
+
+    // Get user names
+    const playerUserIds = (gamePlayers ?? [])
+      .filter((p: any) => p.user_id)
+      .map((p: any) => p.user_id as string);
+
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', playerUserIds);
+
+    const nameMap = new Map<string, string>();
+    for (const p of (gamePlayers ?? []) as any[]) {
+      const userName = (users ?? []).find((u: any) => u.id === p.user_id)?.name;
+      nameMap.set(p.id, userName ?? p.guest_name ?? 'Player');
+    }
+
+    // Get press bets (bets with a parent)
+    const { data: pressBets } = await supabase
+      .from('game_bets')
+      .select('*')
+      .eq('game_id', gameId)
+      .not('parent_bet_id', 'is', null);
+
+    const typedPresses = (pressBets ?? []) as unknown as GameBetRow[];
+
+    // Filter to presses involving this user
+    const userPresses = typedPresses.filter(
+      (b) => b.player_a_id === myPlayerId || b.player_b_id === myPlayerId,
+    );
+
+    let pressesWon = 0;
+    let pressesLost = 0;
+    let netFromPresses = 0;
+
+    const events: PressReplayEvent[] = [];
+
+    for (const press of userPresses) {
+      const isPlayerA = press.player_a_id === myPlayerId;
+      const pressedByPlayerId = isPlayerA ? press.player_a_id : press.player_b_id;
+      const pressedByName = nameMap.get(pressedByPlayerId ?? '') ?? 'Player';
+
+      const region = press.bet_type.includes('front') ? 'Front 9'
+        : press.bet_type.includes('back') ? 'Back 9' : 'Overall';
+
+      let outcome: 'won' | 'lost' | 'push';
+      let netResult: number;
+
+      if (!press.winner_id) {
+        outcome = 'push';
+        netResult = 0;
+      } else if (press.winner_id === myPlayerId) {
+        outcome = 'won';
+        netResult = press.amount;
+        pressesWon++;
+      } else {
+        outcome = 'lost';
+        netResult = -press.amount;
+        pressesLost++;
+      }
+
+      netFromPresses += netResult;
+
+      events.push({
+        hole: press.press_initiated_hole ?? 0,
+        region,
+        margin: press.margin_at_press ?? 0,
+        amount: press.amount,
+        pressedBy: pressedByName,
+        outcome,
+        netResult,
+      });
+    }
+
+    // Sort events by hole
+    events.sort((a, b) => a.hole - b.hole);
+
+    // Missed press opportunities
+    const { data: suggestions } = await supabase
+      .from('press_suggestions')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('accepted', false);
+
+    const missedOpportunities = suggestions?.length ?? 0;
+
+    // What-if calculation
+    const avgPressAmount = userPresses.length > 0
+      ? userPresses.reduce((s, p) => s + p.amount, 0) / userPresses.length
+      : (game as any).settings?.front_bet ?? 5;
+
+    // Get overall press win rate for estimation
+    const pressAnalytics = await getPressAnalytics(userId);
+    const overallWinRate = pressAnalytics.data?.winRate ?? 50;
+
+    const estimatedGainPerMissed = avgPressAmount * ((overallWinRate / 100) - 0.5) * 2;
+    const whatIfNet = netFromPresses + (missedOpportunities * estimatedGainPerMissed);
+
+    return {
+      data: {
+        gameId,
+        courseName: (game as any).course_name ?? '',
+        date: (game as any).completed_at ?? (game as any).created_at ?? '',
+        totalPresses: userPresses.length,
+        pressesWon,
+        pressesLost: userPresses.length - pressesWon - (userPresses.length - pressesWon - (userPresses.filter((p) => !p.winner_id).length)),
+        netFromPresses,
+        events,
+        missedOpportunities,
+        whatIfNet: Math.round(whatIfNet * 100) / 100,
+      },
+    };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
+// ─── Group Leaderboard ──────────────────────────────────────
+
+/**
+ * Get P/L leaderboard across the user's friend group.
+ * Shows net against each opponent with optional timeframe filtering.
+ */
+export async function getGroupLeaderboard(
+  userId: string,
+  timeframe: 'all' | 'month' | 'year' = 'all',
+): Promise<{ data?: GroupLeaderboard; error?: string }> {
+  try {
+    if (timeframe === 'all') {
+      // Use existing matchup records for all-time
+      const result = await getAllMatchupRecords(userId);
+      if (!result.data || result.data.length === 0) {
+        return { error: 'No matchup data' };
+      }
+
+      const entries: LeaderboardEntry[] = result.data.map((record) => ({
+        userId: record.opponentUserId,
+        name: record.opponentName,
+        netVsYou: -record.totalNet, // flip: positive = they owe you
+        gamesPlayed: record.gamesPlayed,
+        winRate: record.gamesPlayed > 0
+          ? (record.wins / record.gamesPlayed) * 100
+          : 0,
+        lastPlayed: record.lastPlayed,
+      }));
+
+      // Sort by netVsYou descending (best for you first)
+      entries.sort((a, b) => b.netVsYou - a.netVsYou);
+
+      return {
+        data: {
+          timeframe,
+          entries,
+          yourTotalNet: entries.reduce((sum, e) => sum + e.netVsYou, 0),
+          totalGames: entries.reduce((sum, e) => sum + e.gamesPlayed, 0),
+        },
+      };
+    }
+
+    // For month/year: filter settlements by date
+    const now = new Date();
+    let dateFilter: string;
+    if (timeframe === 'month') {
+      dateFilter = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    } else {
+      dateFilter = new Date(now.getFullYear(), 0, 1).toISOString();
+    }
+
+    // Get user's game_player IDs
+    const { data: userPlayerRows } = await supabase
+      .from('game_players')
+      .select('id, game_id, user_id')
+      .eq('user_id', userId);
+
+    if (!userPlayerRows || userPlayerRows.length === 0) return { error: 'No games found' };
+
+    const myPlayerIds = new Set(userPlayerRows.map((r: any) => r.id as string));
+    const gameIds = userPlayerRows.map((r: any) => r.game_id);
+
+    // Get settlements in the timeframe
+    const { data: settlements } = await supabase
+      .from('settlements')
+      .select('*')
+      .in('game_id', gameIds)
+      .gte('created_at', dateFilter);
+
+    if (!settlements || settlements.length === 0) {
+      return { data: { timeframe, entries: [], yourTotalNet: 0, totalGames: 0 } };
+    }
+
+    const typedSettlements = settlements as unknown as SettlementRow[];
+
+    // Get all game_players to map player IDs to user IDs
+    const settlementGameIds = [...new Set(typedSettlements.map((s) => s.game_id))];
+    const { data: allPlayersInGames } = await supabase
+      .from('game_players')
+      .select('id, user_id, game_id')
+      .in('game_id', settlementGameIds);
+
+    const playerToUser = new Map<string, string>();
+    for (const p of (allPlayersInGames ?? []) as any[]) {
+      if (p.user_id) playerToUser.set(p.id, p.user_id);
+    }
+
+    // Get user names
+    const opponentUserIds = new Set<string>();
+    for (const s of typedSettlements) {
+      if (!s.from_player_id || !s.to_player_id) continue;
+      const fromUser = playerToUser.get(s.from_player_id);
+      const toUser = playerToUser.get(s.to_player_id);
+      if (fromUser && fromUser !== userId) opponentUserIds.add(fromUser);
+      if (toUser && toUser !== userId) opponentUserIds.add(toUser);
+    }
+
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', [...opponentUserIds]);
+
+    const userNameMap = new Map<string, string>();
+    for (const u of (users ?? []) as any[]) {
+      userNameMap.set(u.id, u.name);
+    }
+
+    // Calculate net per opponent
+    const opponentNet = new Map<string, { net: number; games: Set<string>; wins: number }>();
+
+    for (const s of typedSettlements) {
+      if (!s.from_player_id || !s.to_player_id) continue;
+      const fromUser = playerToUser.get(s.from_player_id);
+      const toUser = playerToUser.get(s.to_player_id);
+
+      if (myPlayerIds.has(s.from_player_id) && toUser && toUser !== userId) {
+        // I owe them
+        const existing = opponentNet.get(toUser) ?? { net: 0, games: new Set(), wins: 0 };
+        existing.net -= s.amount; // negative = I owe
+        existing.games.add(s.game_id);
+        opponentNet.set(toUser, existing);
+      } else if (myPlayerIds.has(s.to_player_id) && fromUser && fromUser !== userId) {
+        // They owe me
+        const existing = opponentNet.get(fromUser) ?? { net: 0, games: new Set(), wins: 0 };
+        existing.net += s.amount; // positive = they owe me
+        existing.games.add(s.game_id);
+        existing.wins++;
+        opponentNet.set(fromUser, existing);
+      }
+    }
+
+    const entries: LeaderboardEntry[] = [];
+    for (const [oppId, data] of opponentNet) {
+      entries.push({
+        userId: oppId,
+        name: userNameMap.get(oppId) ?? 'Player',
+        netVsYou: data.net,
+        gamesPlayed: data.games.size,
+        winRate: data.games.size > 0 ? (data.wins / data.games.size) * 100 : 0,
+        lastPlayed: '',
+      });
+    }
+
+    entries.sort((a, b) => b.netVsYou - a.netVsYou);
+
+    return {
+      data: {
+        timeframe,
+        entries,
+        yourTotalNet: entries.reduce((sum, e) => sum + e.netVsYou, 0),
+        totalGames: entries.reduce((sum, e) => sum + e.gamesPlayed, 0),
       },
     };
   } catch (e: any) {

@@ -402,6 +402,71 @@ export interface ScoringTrends {
   recentTrend: number; // positive = improving, negative = declining
 }
 
+/** Course scouting report for pre-round prep */
+export interface CourseScouting {
+  courseName: string;
+  roundsPlayed: number;
+  averageScore: number;
+  bestScore: number;
+  holeBreakdown: {
+    holeNumber: number;
+    par: number;
+    avgStrokes: number;
+    differential: number;       // avg vs par
+    bestScore: number;
+    worstScore: number;
+  }[];
+  dangerHoles: number[];        // holes where avg is worst vs par
+  opportunityHoles: number[];   // holes where avg is best vs par
+  par3Avg: number;
+  par4Avg: number;
+  par5Avg: number;
+  frontVsBack: { front: number; back: number };
+}
+
+/** Single press event in replay timeline */
+export interface PressReplayEvent {
+  hole: number;
+  region: string;
+  margin: number;
+  amount: number;
+  pressedBy: string;          // player name
+  outcome: 'won' | 'lost' | 'push';
+  netResult: number;
+}
+
+/** Full press replay for a game */
+export interface PressReplay {
+  gameId: string;
+  courseName: string;
+  date: string;
+  totalPresses: number;
+  pressesWon: number;
+  pressesLost: number;
+  netFromPresses: number;
+  events: PressReplayEvent[];
+  missedOpportunities: number;
+  whatIfNet: number;           // net if all missed presses were taken
+}
+
+/** Single entry in group leaderboard */
+export interface LeaderboardEntry {
+  userId: string;
+  name: string;
+  netVsYou: number;           // positive = you owe them
+  gamesPlayed: number;
+  winRate: number;             // your win rate against them
+  lastPlayed: string;
+}
+
+/** Group leaderboard data */
+export interface GroupLeaderboard {
+  timeframe: 'all' | 'month' | 'year';
+  entries: LeaderboardEntry[];
+  yourTotalNet: number;        // sum of all entries
+  totalGames: number;
+}
+
 // Composite types for loaded game data
 export interface GameWithPlayers extends GameRow {
   players: GamePlayerRow[];

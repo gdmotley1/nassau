@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -38,9 +38,11 @@ import {
 import { hapticLight, hapticWarning, hapticSuccess } from '../../utils/haptics';
 import { springs } from '../../utils/animations';
 import { registerForPushNotifications } from '../../services/notificationService';
+import { getAllMatchupRecords, getGroupLeaderboard } from '../../services/aceService';
+import { AcePremiumGate } from '../../components/AcePremiumGate';
 import { useAcePaywall } from '../../hooks/useAcePaywall';
 import type { ProfileStackScreenProps } from '../../navigation/types';
-import type { GameTypeStats, PerformanceInsight, RecentGameSummary } from '../../types';
+import type { GameTypeStats, PerformanceInsight, RecentGameSummary, HeadToHeadRecord, GroupLeaderboard } from '../../types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -54,15 +56,35 @@ export function ProfileScreen({ navigation }: ProfileStackScreenProps<'ProfileMa
   const fetchLifetimeStats = useGameStore((s) => s.fetchLifetimeStats);
   const showToast = useUIStore((s) => s.showToast);
   const { isPremium, openPaywall } = useAcePaywall();
+  const [matchupRecords, setMatchupRecords] = useState<HeadToHeadRecord[]>([]);
+  const [leaderboard, setLeaderboard] = useState<GroupLeaderboard | null>(null);
+  const [leaderboardTimeframe, setLeaderboardTimeframe] = useState<'all' | 'month' | 'year'>('all');
 
   // Fetch stats on focus
   useFocusEffect(
     useCallback(() => {
       if (user?.id) {
         fetchLifetimeStats(user.id);
+        // Fetch Ace opponent rankings (premium only)
+        if (isPremium) {
+          getAllMatchupRecords(user.id).then((result) => {
+            if (result.data) {
+              const sorted = [...result.data].sort((a, b) => b.totalNet - a.totalNet);
+              setMatchupRecords(sorted);
+            }
+          });
+        }
       }
-    }, [user?.id]),
+    }, [user?.id, isPremium]),
   );
+
+  // Fetch leaderboard (premium only, reacts to timeframe changes)
+  useEffect(() => {
+    if (!user?.id || !isPremium) return;
+    getGroupLeaderboard(user.id, leaderboardTimeframe).then((result) => {
+      if (result.data) setLeaderboard(result.data);
+    });
+  }, [user?.id, isPremium, leaderboardTimeframe]);
 
   const handleSignOut = () => {
     hapticWarning();
@@ -309,6 +331,100 @@ export function ProfileScreen({ navigation }: ProfileStackScreenProps<'ProfileMa
               </RHCard>
             </Animated.View>
           )}
+
+          {/* Ace Opponent Rankings */}
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(550)}
+            style={styles.section}
+          >
+            <AcePremiumGate
+              onUpgrade={openPaywall}
+              teaserText="See which opponents are most profitable for you"
+            >
+              {matchupRecords.length > 0 && (
+                <>
+                  <Text
+                    style={[styles.sectionTitle, { color: theme.semantic.textPrimary }]}
+                  >
+                    Opponent Rankings
+                  </Text>
+                  <RHCard>
+                    {matchupRecords.map((record, i) => (
+                      <OpponentRankRow
+                        key={record.opponentUserId}
+                        record={record}
+                        rank={i + 1}
+                        theme={theme}
+                        isFirst={i === 0}
+                        isLast={i === matchupRecords.length - 1}
+                        isWorst={i === matchupRecords.length - 1 && matchupRecords.length > 1}
+                      />
+                    ))}
+                  </RHCard>
+                </>
+              )}
+            </AcePremiumGate>
+          </Animated.View>
+
+          {/* Ace Group Leaderboard */}
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(575)}
+            style={styles.section}
+          >
+            <AcePremiumGate
+              onUpgrade={openPaywall}
+              teaserText="Track your P/L leaderboard across your golf group"
+            >
+              {leaderboard && leaderboard.entries.length > 0 && (
+                <>
+                  <Text
+                    style={[styles.sectionTitle, { color: theme.semantic.textPrimary }]}
+                  >
+                    Leaderboard
+                  </Text>
+
+                  {/* Timeframe toggle */}
+                  <View style={aceStyles.timeframeRow}>
+                    {(['all', 'year', 'month'] as const).map((tf) => (
+                      <TimeframePill
+                        key={tf}
+                        label={tf === 'all' ? 'All Time' : tf === 'year' ? 'This Year' : 'This Month'}
+                        isSelected={leaderboardTimeframe === tf}
+                        onPress={() => {
+                          hapticLight();
+                          setLeaderboardTimeframe(tf);
+                        }}
+                        theme={theme}
+                      />
+                    ))}
+                  </View>
+
+                  <RHCard>
+                    {leaderboard.entries.map((entry, i) => (
+                      <LeaderboardRow
+                        key={entry.userId}
+                        entry={entry}
+                        rank={i + 1}
+                        theme={theme}
+                        isFirst={i === 0}
+                        isLast={i === leaderboard.entries.length - 1}
+                      />
+                    ))}
+                    <View style={[aceStyles.totalRow, { borderTopColor: theme.semantic.border }]}>
+                      <Text style={[aceStyles.totalLabel, { color: theme.semantic.textSecondary }]}>
+                        Your total ({leaderboard.totalGames} games)
+                      </Text>
+                      <RHMoneyDisplay
+                        amount={leaderboard.yourTotalNet}
+                        size="small"
+                        animate={false}
+                      />
+                    </View>
+                  </RHCard>
+                </>
+              )}
+            </AcePremiumGate>
+          </Animated.View>
 
           {/* Recent Games */}
           {stats.recentGames.length > 0 && (
@@ -732,6 +848,154 @@ function RecentGameRow({
   );
 }
 
+/** Opponent rank row for Ace feature */
+function OpponentRankRow({
+  record,
+  rank,
+  theme,
+  isFirst,
+  isLast,
+  isWorst,
+}: {
+  record: HeadToHeadRecord;
+  rank: number;
+  theme: any;
+  isFirst: boolean;
+  isLast: boolean;
+  isWorst: boolean;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <AnimatedPressable
+      onPressIn={() => { scale.value = withSpring(0.97, springs.snappy); }}
+      onPressOut={() => { scale.value = withSpring(1, springs.snappy); }}
+      style={[
+        aceStyles.opponentRow,
+        animatedStyle,
+        isFirst && { backgroundColor: theme.colors.teal[500] + '08' },
+        !isLast && { borderBottomWidth: 0.5, borderBottomColor: theme.semantic.border },
+      ]}
+    >
+      <Text style={[aceStyles.rankNum, { color: theme.semantic.textSecondary }]}>
+        {rank}
+      </Text>
+      <View style={aceStyles.opponentInfo}>
+        <Text style={[aceStyles.opponentName, { color: theme.semantic.textPrimary }]}>
+          {record.opponentName}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          <Text style={[aceStyles.opponentRecord, { color: theme.semantic.textSecondary }]}>
+            {record.wins}-{record.losses}
+          </Text>
+          {isFirst && (
+            <Text style={[aceStyles.badge, { color: theme.colors.teal[500] }]}>
+              Best Matchup
+            </Text>
+          )}
+          {isWorst && (
+            <Text style={[aceStyles.badge, { color: theme.colors.red[500] }]}>
+              Toughest Rival
+            </Text>
+          )}
+        </View>
+      </View>
+      <RHMoneyDisplay
+        amount={record.totalNet}
+        size="small"
+        animate={false}
+      />
+    </AnimatedPressable>
+  );
+}
+
+/** Timeframe pill for leaderboard toggle */
+function TimeframePill({
+  label,
+  isSelected,
+  onPress,
+  theme,
+}: {
+  label: string;
+  isSelected: boolean;
+  onPress: () => void;
+  theme: any;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <AnimatedPressable
+      onPressIn={() => { scale.value = withSpring(0.95, springs.snappy); }}
+      onPressOut={() => { scale.value = withSpring(1, springs.bouncy); }}
+      onPress={onPress}
+      style={[
+        aceStyles.pill,
+        {
+          backgroundColor: isSelected ? theme.colors.teal[500] : theme.semantic.surface,
+        },
+        animatedStyle,
+      ]}
+    >
+      <Text
+        style={[
+          aceStyles.pillText,
+          { color: isSelected ? '#FFFFFF' : theme.semantic.textSecondary },
+        ]}
+      >
+        {label}
+      </Text>
+    </AnimatedPressable>
+  );
+}
+
+/** Leaderboard row */
+function LeaderboardRow({
+  entry,
+  rank,
+  theme,
+  isFirst,
+  isLast,
+}: {
+  entry: { userId: string; name: string; netVsYou: number; gamesPlayed: number };
+  rank: number;
+  theme: any;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  return (
+    <View
+      style={[
+        aceStyles.leaderboardRow,
+        isFirst && { backgroundColor: theme.colors.teal[500] + '08' },
+        !isLast && { borderBottomWidth: 0.5, borderBottomColor: theme.semantic.border },
+      ]}
+    >
+      <Text style={[aceStyles.rankNum, { color: theme.semantic.textSecondary }]}>
+        {rank}
+      </Text>
+      <View style={aceStyles.opponentInfo}>
+        <Text style={[aceStyles.opponentName, { color: theme.semantic.textPrimary }]}>
+          {entry.name}
+        </Text>
+        <Text style={[aceStyles.opponentRecord, { color: theme.semantic.textSecondary }]}>
+          {entry.gamesPlayed} game{entry.gamesPlayed !== 1 ? 's' : ''}
+        </Text>
+      </View>
+      <RHMoneyDisplay
+        amount={entry.netVsYou}
+        size="small"
+        animate={false}
+      />
+    </View>
+  );
+}
+
 /** Settings row with press animation */
 function SettingsRow({
   label,
@@ -797,6 +1061,68 @@ const settingsStyles = StyleSheet.create({
   arrow: {
     fontSize: 20,
     fontWeight: '300',
+  },
+});
+
+const aceStyles = StyleSheet.create({
+  opponentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  rankNum: {
+    width: 24,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  opponentInfo: {
+    flex: 1,
+    marginLeft: 4,
+  },
+  opponentName: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  opponentRecord: {
+    fontSize: 12,
+  },
+  badge: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  timeframeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  pill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  pillText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  leaderboardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 0.5,
+  },
+  totalLabel: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
 

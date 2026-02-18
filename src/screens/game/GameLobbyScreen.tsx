@@ -10,9 +10,9 @@ import { hapticSuccess } from '../../utils/haptics';
 import { formatPlayerName } from '../../utils/format';
 import { useAcePaywall } from '../../hooks/useAcePaywall';
 import { AcePremiumGate } from '../../components/AcePremiumGate';
-import { getHeadToHeadRecord } from '../../services/aceService';
+import { getHeadToHeadRecord, getCourseScouting } from '../../services/aceService';
 import type { HomeStackScreenProps } from '../../navigation/types';
-import type { NassauSettings, HeadToHeadRecord } from '../../types';
+import type { NassauSettings, HeadToHeadRecord, CourseScouting } from '../../types';
 
 export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'GameLobby'>) {
   const { gameId } = route.params;
@@ -28,6 +28,7 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
 
   const { isPremium, openPaywall } = useAcePaywall();
   const [matchups, setMatchups] = useState<HeadToHeadRecord[]>([]);
+  const [scouting, setScouting] = useState<CourseScouting | null>(null);
 
   useEffect(() => {
     loadActiveGame(gameId);
@@ -46,6 +47,14 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
       setMatchups(valid);
     });
   }, [user?.id, activeGameData?.players.length, isPremium]);
+
+  // Fetch course scouting data (premium only)
+  useEffect(() => {
+    if (!user?.id || !activeGameData?.game?.course_name || !isPremium) return;
+    getCourseScouting(user.id, activeGameData.game.course_name).then((result) => {
+      if (result.data) setScouting(result.data);
+    });
+  }, [user?.id, activeGameData?.game?.course_name, isPremium]);
 
   const game = activeGameData?.game;
   const players = activeGameData?.players ?? [];
@@ -202,6 +211,83 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
           </Animated.View>
         )}
 
+        {/* Ace Course Scouting */}
+        {game.course_name && (
+          <Animated.View entering={FadeInDown.duration(400).delay(350)}>
+            <AcePremiumGate
+              onUpgrade={openPaywall}
+              teaserText="See your hole-by-hole stats at this course"
+            >
+              {scouting && scouting.roundsPlayed > 0 && (
+                <>
+                  <Text style={[styles.sectionLabel, { color: theme.semantic.textSecondary }]}>
+                    COURSE SCOUTING
+                  </Text>
+                  <AceInsightCard
+                    variant="insight"
+                    headline={`Your ${scouting.courseName} Report`}
+                    body={
+                      scouting.dangerHoles.length > 0
+                        ? `You've played here ${scouting.roundsPlayed} time${scouting.roundsPlayed !== 1 ? 's' : ''}. Watch out for hole${scouting.dangerHoles.length > 1 ? 's' : ''} ${scouting.dangerHoles.join(', ')}.`
+                        : `You've played here ${scouting.roundsPlayed} time${scouting.roundsPlayed !== 1 ? 's' : ''}. Solid play across the board.`
+                    }
+                    stat={scouting.averageScore.toFixed(0)}
+                    statLabel="avg score"
+                    supportingFacts={[
+                      `Par 3: ${scouting.par3Avg.toFixed(1)}  Par 4: ${scouting.par4Avg.toFixed(1)}  Par 5: ${scouting.par5Avg.toFixed(1)}`,
+                      `Front: ${scouting.frontVsBack.front}  Back: ${scouting.frontVsBack.back}`,
+                      ...(scouting.opportunityHoles.length > 0
+                        ? [`Best holes: ${scouting.opportunityHoles.join(', ')}`]
+                        : []),
+                    ]}
+                  />
+
+                  {/* Hole-by-hole grid */}
+                  <View style={[scoutStyles.grid, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}>
+                    <View style={scoutStyles.gridHeader}>
+                      <Text style={[scoutStyles.gridHeaderText, scoutStyles.holeCol, { color: theme.semantic.textSecondary }]}>Hole</Text>
+                      <Text style={[scoutStyles.gridHeaderText, scoutStyles.parCol, { color: theme.semantic.textSecondary }]}>Par</Text>
+                      <Text style={[scoutStyles.gridHeaderText, scoutStyles.avgCol, { color: theme.semantic.textSecondary }]}>Avg</Text>
+                    </View>
+                    {scouting.holeBreakdown.map((hole) => (
+                      <View
+                        key={hole.holeNumber}
+                        style={[
+                          scoutStyles.gridRow,
+                          { borderTopColor: theme.semantic.border },
+                        ]}
+                      >
+                        <Text style={[scoutStyles.gridCell, scoutStyles.holeCol, { color: theme.semantic.textPrimary }]}>
+                          {hole.holeNumber}
+                        </Text>
+                        <Text style={[scoutStyles.gridCell, scoutStyles.parCol, { color: theme.semantic.textSecondary }]}>
+                          {hole.par}
+                        </Text>
+                        <Text
+                          style={[
+                            scoutStyles.gridCell,
+                            scoutStyles.avgCol,
+                            {
+                              color: hole.differential < -0.1
+                                ? theme.colors.green[500]
+                                : hole.differential > 0.1
+                                ? theme.colors.red[500]
+                                : theme.semantic.textPrimary,
+                              fontWeight: '700',
+                            },
+                          ]}
+                        >
+                          {hole.avgStrokes.toFixed(1)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+            </AcePremiumGate>
+          </Animated.View>
+        )}
+
         {/* Ace Matchup Insights */}
         {players.filter((p) => p.user_id && p.user_id !== user?.id).length > 0 && (
           <Animated.View entering={FadeInDown.duration(400).delay(400)}>
@@ -288,6 +374,37 @@ const chipStyles = StyleSheet.create({
   },
   label: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
   amount: { fontSize: 17, fontWeight: '700', marginTop: 2 },
+});
+
+const scoutStyles = StyleSheet.create({
+  grid: {
+    borderRadius: 12,
+    borderWidth: 0.5,
+    overflow: 'hidden',
+    marginTop: 12,
+  },
+  gridHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  gridHeaderText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderTopWidth: 0.5,
+  },
+  gridCell: {
+    fontSize: 14,
+  },
+  holeCol: { width: 50 },
+  parCol: { width: 50, textAlign: 'center' },
+  avgCol: { flex: 1, textAlign: 'right' },
 });
 
 const styles = StyleSheet.create({
