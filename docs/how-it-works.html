@@ -114,7 +114,7 @@
 
     .timeline {
       max-width: 720px; margin: 0 auto; position: relative;
-      padding-left: 48px;
+      padding-left: 72px;
     }
 
     .timeline::before {
@@ -128,7 +128,7 @@
     .timeline-step:last-child { margin-bottom: 0; }
 
     .step-marker {
-      position: absolute; left: -48px; top: 0;
+      position: absolute; left: -72px; top: 0;
       width: 48px; height: 48px; border-radius: 50%;
       background: var(--teal); color: #000;
       display: flex; align-items: center; justify-content: center;
@@ -228,9 +228,9 @@
 
     @media (max-width: 768px) {
       .footer-grid { grid-template-columns: 1fr; gap: 32px; }
-      .timeline { padding-left: 40px; }
+      .timeline { padding-left: 56px; }
       .timeline::before { left: 19px; }
-      .step-marker { left: -40px; width: 40px; height: 40px; font-size: 17px; }
+      .step-marker { left: -56px; width: 40px; height: 40px; font-size: 17px; }
     }
 
     @keyframes fadeUp {
