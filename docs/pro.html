@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nassau Pro - Nassau</title>
+  <meta name="description" content="AI-powered golf betting analytics. Press advice, matchup intel, round analysis, and form tracking to help you bet smarter and win more.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --teal: #00D4AA;
+      --teal-dim: rgba(0, 212, 170, 0.12);
+      --green: #00C805;
+      --green-dim: rgba(0, 200, 5, 0.15);
+      --red: #FF5000;
+      --bg: #000000;
+      --card: #1C1C1E;
+      --elevated: #2C2C2E;
+      --border: #38383A;
+      --text: #FFFFFF;
+      --text-secondary: #8E8E93;
+      --text-tertiary: #48484A;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { opacity: 0.85; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* ─── Nav ───────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(56, 56, 58, 0.5);
+    }
+    nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+    .nav-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
+    .nav-logo span { color: var(--teal); }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); opacity: 1; }
+    .nav-links a.active { color: var(--teal); }
+    .nav-cta {
+      padding: 8px 20px; background: var(--teal); color: #000 !important;
+      border-radius: 8px; font-weight: 600 !important; font-size: 14px !important;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .nav-cta:hover { transform: scale(0.97); opacity: 0.9 !important; }
+    .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 2; }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px); z-index: 99;
+      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { color: var(--text-secondary); font-size: 20px; font-weight: 600; transition: color 0.2s; }
+    .mobile-menu a:hover { color: var(--text); opacity: 1; }
+    .mobile-menu a.active { color: var(--teal); }
+    .mobile-menu .nav-cta { padding: 14px 36px; font-size: 17px !important; border-radius: 12px; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: block; }
+    }
+
+    /* ─── Hero ──────────────────────────────────────── */
+    .pro-hero {
+      padding: 140px 24px 80px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+
+    .pro-hero-glow {
+      position: absolute; top: -250px; left: 50%; transform: translateX(-50%);
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 212, 170, 0.12), transparent 70%);
+      pointer-events: none;
+    }
+
+    .pro-badge {
+      display: inline-block; padding: 8px 24px; border-radius: 10px;
+      background: var(--teal-dim); color: var(--teal);
+      font-size: 14px; font-weight: 800; letter-spacing: 2.5px;
+      margin-bottom: 28px; position: relative;
+    }
+
+    .pro-hero h1 {
+      font-size: clamp(36px, 7vw, 56px); font-weight: 800;
+      letter-spacing: -2px; line-height: 1.05; margin-bottom: 20px;
+      position: relative;
+    }
+    .pro-hero h1 .accent { color: var(--teal); }
+
+    .pro-hero > p {
+      font-size: 19px; color: var(--text-secondary); max-width: 500px;
+      margin: 0 auto; line-height: 1.6; position: relative;
+    }
+
+    /* ─── Feature Deep Dives ───────────────────────── */
+    .pro-features { padding: 60px 0 100px; }
+
+    .pro-feature-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
+      align-items: center; margin-bottom: 80px; max-width: 960px;
+      margin-left: auto; margin-right: auto; padding: 0 24px;
+    }
+    .pro-feature-row:last-child { margin-bottom: 0; }
+    .pro-feature-row.reverse { direction: rtl; }
+    .pro-feature-row.reverse > * { direction: ltr; }
+
+    .pro-feature-visual {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 40px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+
+    .pro-feature-visual::before {
+      content: ''; position: absolute; top: -60px; left: 50%;
+      transform: translateX(-50%); width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 212, 170, 0.08), transparent 70%);
+      pointer-events: none;
+    }
+
+    .visual-icon {
+      font-size: 56px; margin-bottom: 16px; position: relative;
+    }
+
+    .visual-stat {
+      font-size: 40px; font-weight: 800; letter-spacing: -1.5px;
+      color: var(--teal); margin-bottom: 4px; position: relative;
+    }
+
+    .visual-label {
+      font-size: 13px; color: var(--text-secondary); font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.5px; position: relative;
+    }
+
+    .pro-feature-text {}
+    .pro-feature-text .feature-tag {
+      display: inline-block; padding: 4px 12px; border-radius: 6px;
+      background: var(--teal-dim); color: var(--teal);
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 14px;
+    }
+
+    .pro-feature-text h2 {
+      font-size: 28px; font-weight: 800; letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    .pro-feature-text > p {
+      font-size: 16px; color: var(--text-secondary); line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .pro-feature-text ul { list-style: none; }
+    .pro-feature-text li {
+      font-size: 14px; color: var(--text-secondary); margin-bottom: 10px;
+      padding-left: 24px; position: relative; line-height: 1.5;
+    }
+    .pro-feature-text li::before {
+      content: '\2713'; position: absolute; left: 0; top: 0;
+      color: var(--green); font-weight: 700; font-size: 14px;
+    }
+
+    /* ─── Comparison Table ──────────────────────────── */
+    .comparison {
+      padding: 80px 0; border-top: 1px solid var(--border);
+    }
+
+    .comparison .section-label {
+      text-align: center; font-size: 12px; font-weight: 700;
+      letter-spacing: 2.5px; color: var(--teal); text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .comparison .section-title {
+      text-align: center; font-size: clamp(28px, 5vw, 36px);
+      font-weight: 800; letter-spacing: -1px; margin-bottom: 48px;
+    }
+
+    .comparison-table {
+      max-width: 680px; margin: 0 auto;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+    }
+
+    .comparison-header {
+      display: grid; grid-template-columns: 1fr 100px 100px;
+      padding: 16px 24px; background: var(--elevated);
+      border-bottom: 1px solid var(--border);
+    }
+    .comparison-header span {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-secondary); text-align: center;
+    }
+    .comparison-header span:first-child { text-align: left; }
+
+    .comparison-row {
+      display: grid; grid-template-columns: 1fr 100px 100px;
+      padding: 14px 24px; border-bottom: 1px solid rgba(56, 56, 58, 0.3);
+    }
+    .comparison-row:last-child { border-bottom: none; }
+
+    .comparison-row span {
+      font-size: 14px; color: var(--text-secondary); text-align: center;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .comparison-row span:first-child {
+      text-align: left; justify-content: flex-start; color: var(--text);
+      font-weight: 500;
+    }
+
+    .check { color: var(--green); font-weight: 700; font-size: 16px; }
+    .dash { color: var(--text-tertiary); }
+
+    /* ─── Pricing ──────────────────────────────────── */
+    .pricing {
+      padding: 80px 0; border-top: 1px solid var(--border);
+    }
+
+    .pricing .section-label {
+      text-align: center; font-size: 12px; font-weight: 700;
+      letter-spacing: 2.5px; color: var(--teal); text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .pricing .section-title {
+      text-align: center; font-size: clamp(28px, 5vw, 36px);
+      font-weight: 800; letter-spacing: -1px; margin-bottom: 12px;
+    }
+    .pricing .section-subtitle {
+      text-align: center; font-size: 17px; color: var(--text-secondary);
+      max-width: 480px; margin: 0 auto 48px; line-height: 1.6;
+    }
+
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px; max-width: 880px; margin: 0 auto;
+    }
+
+    .price-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px; text-align: center;
+      transition: transform 0.3s, border-color 0.3s;
+      position: relative;
+    }
+    .price-card:hover { transform: translateY(-4px); }
+    .price-card.featured {
+      border-color: rgba(0, 212, 170, 0.4);
+    }
+    .price-card.featured:hover { border-color: rgba(0, 212, 170, 0.6); }
+
+    .price-popular {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      padding: 4px 16px; border-radius: 20px; background: var(--teal);
+      color: #000; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; white-space: nowrap;
+    }
+
+    .price-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+
+    .price-amount {
+      font-size: 40px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 4px;
+    }
+    .price-amount .currency { font-size: 22px; vertical-align: top; margin-right: 2px; }
+
+    .price-period { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+
+    .price-card .price-cta {
+      display: block; padding: 14px; background: var(--teal);
+      color: #000; border-radius: 10px; font-size: 15px;
+      font-weight: 600; transition: transform 0.2s, opacity 0.2s;
+      text-align: center;
+    }
+    .price-card .price-cta:hover { transform: scale(0.97); opacity: 0.9; }
+
+    .price-card.outline .price-cta {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .price-card.outline .price-cta:hover { border-color: var(--teal); color: var(--teal); }
+
+    .price-note {
+      text-align: center; margin-top: 24px; font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    /* ─── CTA ──────────────────────────────────────── */
+    .bottom-cta {
+      padding: 80px 0; text-align: center; border-top: 1px solid var(--border);
+    }
+    .bottom-cta h2 {
+      font-size: clamp(28px, 5vw, 40px); font-weight: 800;
+      letter-spacing: -1px; margin-bottom: 16px;
+    }
+    .bottom-cta p { font-size: 17px; color: var(--text-secondary); margin-bottom: 32px; }
+    .cta-button {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 36px; background: var(--teal); color: #000;
+      border-radius: 12px; font-size: 17px; font-weight: 600;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .cta-button:hover { transform: scale(0.97); opacity: 0.9; }
+    .cta-button svg { width: 20px; height: 20px; }
+
+    /* ─── Footer ────────────────────────────────────── */
+    footer { border-top: 1px solid var(--border); padding: 48px 0; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; margin-bottom: 40px; }
+    .footer-brand h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .footer-brand h3 span { color: var(--teal); }
+    .footer-brand p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 300px; }
+    .footer-col h4 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; color: var(--text-secondary); }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 10px; }
+    .footer-col a { color: var(--text-secondary); font-size: 14px; font-weight: 400; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--teal); opacity: 1; }
+    .footer-bottom { border-top: 1px solid var(--border); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom p { font-size: 12px; color: var(--text-tertiary); }
+
+    @media (max-width: 768px) {
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+      .pro-feature-row { grid-template-columns: 1fr; gap: 32px; }
+      .pro-feature-row.reverse { direction: ltr; }
+      .comparison-header, .comparison-row { grid-template-columns: 1fr 80px 80px; padding: 12px 16px; }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate { opacity: 0; animation: fadeUp 0.6s ease-out forwards; }
+    .animate-d1 { animation-delay: 0.1s; }
+    .animate-d2 { animation-delay: 0.2s; }
+    .animate-d3 { animation-delay: 0.3s; }
+    .animate-d4 { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="container">
+      <a href="/" class="nav-logo">nassau<span>.</span></a>
+      <ul class="nav-links">
+        <li><a href="features.html">Features</a></li>
+        <li><a href="how-it-works.html">How It Works</a></li>
+        <li><a href="pro.html" class="active">Nassau Pro</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="/" class="nav-cta">Download</a></li>
+      </ul>
+      <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-menu">
+    <a href="features.html">Features</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="pro.html" class="active">Nassau Pro</a>
+    <a href="support.html">Support</a>
+    <a href="/" class="nav-cta">Download</a>
+  </div>
+
+  <!-- Hero -->
+  <section class="pro-hero">
+    <div class="pro-hero-glow"></div>
+    <div class="pro-badge animate">NASSAU PRO</div>
+    <h1 class="animate animate-d1">Your <span class="accent">betting edge</span></h1>
+    <p class="animate animate-d2">AI-powered analytics that help you make smarter bets and win more money on the course.</p>
+  </section>
+
+  <!-- Feature Deep Dives -->
+  <section class="pro-features">
+    <div class="container">
+
+      <!-- Press Advisor -->
+      <div class="pro-feature-row animate">
+        <div class="pro-feature-visual">
+          <div class="visual-icon">&#128200;</div>
+          <div class="visual-stat">73%</div>
+          <div class="visual-label">Historical Win Rate</div>
+        </div>
+        <div class="pro-feature-text">
+          <div class="feature-tag">Press Advisor</div>
+          <h2>Know when to press</h2>
+          <p>Get real-time press recommendations based on your historical performance, opponent tendencies, and current game state.</p>
+          <ul>
+            <li>Win rate analysis by bet region</li>
+            <li>Opponent-specific press history</li>
+            <li>Margin-aware recommendations</li>
+            <li>Live advice during scoring</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Matchup Intel -->
+      <div class="pro-feature-row reverse animate animate-d1">
+        <div class="pro-feature-visual">
+          <div class="visual-icon">&#128101;</div>
+          <div class="visual-stat">7-3</div>
+          <div class="visual-label">vs Your Rival</div>
+        </div>
+        <div class="pro-feature-text">
+          <div class="feature-tag">Matchup Intel</div>
+          <h2>Know your opponents</h2>
+          <p>Detailed head-to-head records against every player. See who you dominate and where you need to tighten up.</p>
+          <ul>
+            <li>Head-to-head W-L-T records</li>
+            <li>Net P/L against each player</li>
+            <li>Front 9 vs back 9 comparison</li>
+            <li>Pre-game opponent scouting</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Round Analysis -->
+      <div class="pro-feature-row animate animate-d2">
+        <div class="pro-feature-visual">
+          <div class="visual-icon">&#128202;</div>
+          <div class="visual-stat">-2.4</div>
+          <div class="visual-label">Strokes vs Average</div>
+        </div>
+        <div class="pro-feature-text">
+          <div class="feature-tag">Round Analysis</div>
+          <h2>Learn from every round</h2>
+          <p>Post-round breakdown showing where you left money on the table and how your game compares to your season average.</p>
+          <ul>
+            <li>Score vs season average comparison</li>
+            <li>Best and worst holes identified</li>
+            <li>Missed press opportunities flagged</li>
+            <li>Actionable takeaways per round</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Form Tracker -->
+      <div class="pro-feature-row reverse animate animate-d3">
+        <div class="pro-feature-visual">
+          <div class="visual-icon">&#128293;</div>
+          <div class="visual-stat">HOT</div>
+          <div class="visual-label">Current Form</div>
+        </div>
+        <div class="pro-feature-text">
+          <div class="feature-tag">Form Tracker</div>
+          <h2>Track your momentum</h2>
+          <p>See your scoring trends, streaks, and handicap trajectory over time. Know when you're playing your best.</p>
+          <ul>
+            <li>Hot / Cold / Steady form indicator</li>
+            <li>Rolling scoring averages</li>
+            <li>Win streak tracking</li>
+            <li>Handicap trajectory over time</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Comparison -->
+  <section class="comparison">
+    <div class="container">
+      <div class="section-label">Compare Plans</div>
+      <h2 class="section-title">Free vs Pro</h2>
+
+      <div class="comparison-table">
+        <div class="comparison-header">
+          <span>Feature</span>
+          <span>Free</span>
+          <span>Pro</span>
+        </div>
+        <div class="comparison-row">
+          <span>Live Scorecard</span>
+          <span class="check">&#10003;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Press Bets</span>
+          <span class="check">&#10003;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Instant Settlements</span>
+          <span class="check">&#10003;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Friends System</span>
+          <span class="check">&#10003;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Game History</span>
+          <span class="check">&#10003;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Press Advisor</span>
+          <span class="dash">&#8212;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Matchup Intel</span>
+          <span class="dash">&#8212;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Round Analysis</span>
+          <span class="dash">&#8212;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Form Tracker</span>
+          <span class="dash">&#8212;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Scoring Trends</span>
+          <span class="dash">&#8212;</span>
+          <span class="check">&#10003;</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="pricing">
+    <div class="container">
+      <div class="section-label">Pricing</div>
+      <h2 class="section-title">Simple, fair pricing</h2>
+      <p class="section-subtitle">Choose the plan that works for you. Cancel anytime.</p>
+
+      <div class="pricing-grid">
+        <div class="price-card outline">
+          <h3>Monthly</h3>
+          <div class="price-amount"><span class="currency">$</span>4.99</div>
+          <div class="price-period">per month</div>
+          <a href="/" class="price-cta">Get Started</a>
+        </div>
+        <div class="price-card featured">
+          <div class="price-popular">Best Value</div>
+          <h3>Yearly</h3>
+          <div class="price-amount"><span class="currency">$</span>29.99</div>
+          <div class="price-period">per year (save 50%)</div>
+          <a href="/" class="price-cta">Get Started</a>
+        </div>
+        <div class="price-card outline">
+          <h3>Lifetime</h3>
+          <div class="price-amount"><span class="currency">$</span>79.99</div>
+          <div class="price-period">one time purchase</div>
+          <a href="/" class="price-cta">Get Started</a>
+        </div>
+      </div>
+      <p class="price-note">All plans include a 7-day free trial. Billed through the App Store.</p>
+    </div>
+  </section>
+
+  <!-- Bottom CTA -->
+  <section class="bottom-cta">
+    <div class="container">
+      <h2>Ready for an edge?</h2>
+      <p>Download Nassau and unlock smarter betting with Pro.</p>
+      <a href="/" class="cta-button">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 21.99 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 21.99C7.79 22.03 6.8 20.68 5.96 19.47C4.25 16.97 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/></svg>
+        Download for iOS
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>nassau<span>.</span></h3>
+          <p>The smartest way to bet on the golf course. Track bets, settle up, and get AI-powered insights.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="features.html">Features</a></li>
+            <li><a href="pro.html">Nassau Pro</a></li>
+            <li><a href="/">Download</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="support.html">Support</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Nassau. All rights reserved.</p>
+        <p><a href="mailto:hello@nassauapp.com">hello@nassauapp.com</a></p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

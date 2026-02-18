@@ -6,70 +6,208 @@
   <title>Support - Nassau</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #000; color: #F9F9F9;
-      padding: 48px 24px; max-width: 680px; margin: 0 auto;
-      line-height: 1.7;
+
+    :root {
+      --teal: #00D4AA;
+      --teal-dim: rgba(0, 212, 170, 0.12);
+      --bg: #000000;
+      --card: #1C1C1E;
+      --border: #38383A;
+      --text: #FFFFFF;
+      --text-secondary: #8E8E93;
+      --text-tertiary: #48484A;
     }
-    a { color: #00D4AA; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .back { display: inline-block; margin-bottom: 32px; font-size: 14px; color: #8E8E93; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { opacity: 0.85; }
+
+    /* ─── Nav ───────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(56, 56, 58, 0.5);
+    }
+    nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+    .nav-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
+    .nav-logo span { color: var(--teal); }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); opacity: 1; }
+    .nav-links a.active { color: var(--teal); }
+    .nav-cta {
+      padding: 8px 20px; background: var(--teal); color: #000 !important;
+      border-radius: 8px; font-weight: 600 !important; font-size: 14px !important;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .nav-cta:hover { transform: scale(0.97); opacity: 0.9 !important; }
+    .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 2; }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px); z-index: 99;
+      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { color: var(--text-secondary); font-size: 20px; font-weight: 600; transition: color 0.2s; }
+    .mobile-menu a:hover { color: var(--text); opacity: 1; }
+    .mobile-menu a.active { color: var(--teal); }
+    .mobile-menu .nav-cta { padding: 14px 36px; font-size: 17px !important; border-radius: 12px; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: block; }
+    }
+
+    /* ─── Content ──────────────────────────────────── */
+    .page-content {
+      max-width: 680px; margin: 0 auto; padding: 120px 24px 80px;
+    }
+
     h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
-    .subtitle { font-size: 15px; color: #8E8E93; margin-bottom: 32px; }
+    .subtitle { font-size: 15px; color: var(--text-secondary); margin-bottom: 32px; }
     h2 { font-size: 20px; font-weight: 700; margin-top: 32px; margin-bottom: 12px; }
     p, li { font-size: 15px; color: #D1D1D6; margin-bottom: 12px; }
+
     .contact-card {
-      background: #1C1C1E; border-radius: 12px; padding: 24px;
-      margin-top: 24px; border: 1px solid #2C2C2E;
+      background: var(--card); border-radius: 12px; padding: 24px;
+      margin-top: 24px; border: 1px solid var(--border);
     }
-    .contact-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; color: #F9F9F9; }
+    .contact-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+
     .email-link {
-      display: inline-block; padding: 12px 24px; background: #00D4AA;
+      display: inline-block; padding: 12px 24px; background: var(--teal);
       color: #000; border-radius: 10px; font-weight: 600; font-size: 15px;
       margin-top: 12px; transition: transform 0.2s;
     }
     .email-link:hover { transform: scale(0.97); text-decoration: none; }
+
     .faq-item { margin-bottom: 20px; }
-    .faq-item strong { color: #F9F9F9; font-size: 15px; display: block; margin-bottom: 4px; }
+    .faq-item strong { color: var(--text); font-size: 15px; display: block; margin-bottom: 4px; }
+
+    /* ─── Footer ────────────────────────────────────── */
+    footer { border-top: 1px solid var(--border); padding: 48px 0; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; margin-bottom: 40px; }
+    .footer-brand h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .footer-brand h3 span { color: var(--teal); }
+    .footer-brand p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 300px; }
+    .footer-col h4 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; color: var(--text-secondary); }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 10px; }
+    .footer-col a { color: var(--text-secondary); font-size: 14px; font-weight: 400; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--teal); opacity: 1; }
+    .footer-bottom { border-top: 1px solid var(--border); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom p { font-size: 12px; color: var(--text-tertiary); }
+
+    @media (max-width: 768px) {
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    }
   </style>
 </head>
 <body>
-  <a href="/" class="back">&larr; Back to Nassau</a>
-  <h1>Support</h1>
-  <p class="subtitle">We're here to help you get the most out of Nassau.</p>
 
-  <h2>FAQ</h2>
-
-  <div class="faq-item">
-    <strong>How do I settle up after a round?</strong>
-    <p>When a game is completed, tap "Settle Up" on the game detail screen. Nassau will calculate what each player owes and provide one-tap Venmo links for easy payment.</p>
+  <!-- Nav -->
+  <nav>
+    <div class="container">
+      <a href="/" class="nav-logo">nassau<span>.</span></a>
+      <ul class="nav-links">
+        <li><a href="features.html">Features</a></li>
+        <li><a href="how-it-works.html">How It Works</a></li>
+        <li><a href="pro.html">Nassau Pro</a></li>
+        <li><a href="support.html" class="active">Support</a></li>
+        <li><a href="/" class="nav-cta">Download</a></li>
+      </ul>
+      <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-menu">
+    <a href="features.html">Features</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="pro.html">Nassau Pro</a>
+    <a href="support.html" class="active">Support</a>
+    <a href="/" class="nav-cta">Download</a>
   </div>
 
-  <div class="faq-item">
-    <strong>How do I add friends?</strong>
-    <p>Go to your Profile, tap Friends, then share your friend code or enter a friend's code to connect. Friends appear when creating new games.</p>
+  <!-- Content -->
+  <div class="page-content">
+    <h1>Support</h1>
+    <p class="subtitle">We're here to help you get the most out of Nassau.</p>
+
+    <h2>FAQ</h2>
+
+    <div class="faq-item">
+      <strong>How do I settle up after a round?</strong>
+      <p>When a game is completed, tap "Settle Up" on the game detail screen. Nassau will calculate what each player owes and provide one-tap Venmo links for easy payment.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>How do I add friends?</strong>
+      <p>Go to your Profile, tap Friends, then share your friend code or enter a friend's code to connect. Friends appear when creating new games.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>What is Nassau Pro?</strong>
+      <p>Nassau Pro is our premium subscription that unlocks AI-powered features including press advice, matchup analytics, and post-round analysis to help you bet smarter.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>How do I cancel my subscription?</strong>
+      <p>Open the Settings app on your iPhone, tap your name at the top, then Subscriptions. Find Nassau and tap Cancel Subscription.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>How do I delete my account?</strong>
+      <p>Contact us at the email below and we'll permanently delete your account and all associated data within 30 days.</p>
+    </div>
+
+    <div class="contact-card">
+      <h3>Still need help?</h3>
+      <p>Reach out and we'll get back to you as soon as possible.</p>
+      <a href="mailto:support@nassauapp.com" class="email-link">Email support@nassauapp.com</a>
+    </div>
   </div>
 
-  <div class="faq-item">
-    <strong>What is Nassau Pro?</strong>
-    <p>Nassau Pro is our premium subscription that unlocks AI-powered features including press advice, matchup analytics, and post-round analysis to help you bet smarter.</p>
-  </div>
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>nassau<span>.</span></h3>
+          <p>The smartest way to bet on the golf course. Track bets, settle up, and get AI-powered insights.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="features.html">Features</a></li>
+            <li><a href="pro.html">Nassau Pro</a></li>
+            <li><a href="/">Download</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="support.html">Support</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Nassau. All rights reserved.</p>
+        <p><a href="mailto:hello@nassauapp.com">hello@nassauapp.com</a></p>
+      </div>
+    </div>
+  </footer>
 
-  <div class="faq-item">
-    <strong>How do I cancel my subscription?</strong>
-    <p>Open the Settings app on your iPhone, tap your name at the top, then Subscriptions. Find Nassau and tap Cancel Subscription.</p>
-  </div>
-
-  <div class="faq-item">
-    <strong>How do I delete my account?</strong>
-    <p>Contact us at the email below and we'll permanently delete your account and all associated data within 30 days.</p>
-  </div>
-
-  <div class="contact-card">
-    <h3>Still need help?</h3>
-    <p>Reach out and we'll get back to you as soon as possible.</p>
-    <a href="mailto:support@nassauapp.com" class="email-link">Email support@nassauapp.com</a>
-  </div>
 </body>
 </html>

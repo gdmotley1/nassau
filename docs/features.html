@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Features - Nassau</title>
+  <meta name="description" content="Live scoring, instant settlements, press bets, friends, lifetime stats, and course memory. Everything you need on the course.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --teal: #00D4AA;
+      --teal-dim: rgba(0, 212, 170, 0.12);
+      --green: #00C805;
+      --red: #FF5000;
+      --bg: #000000;
+      --card: #1C1C1E;
+      --elevated: #2C2C2E;
+      --border: #38383A;
+      --text: #FFFFFF;
+      --text-secondary: #8E8E93;
+      --text-tertiary: #48484A;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { opacity: 0.85; }
+
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* ─── Nav ───────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(56, 56, 58, 0.5);
+    }
+
+    nav .container {
+      display: flex; justify-content: space-between; align-items: center; height: 64px;
+    }
+
+    .nav-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
+    .nav-logo span { color: var(--teal); }
+
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); opacity: 1; }
+    .nav-links a.active { color: var(--teal); }
+
+    .nav-cta {
+      padding: 8px 20px; background: var(--teal); color: #000 !important;
+      border-radius: 8px; font-weight: 600 !important; font-size: 14px !important;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .nav-cta:hover { transform: scale(0.97); opacity: 0.9 !important; }
+
+    .hamburger {
+      display: none; background: none; border: none; cursor: pointer; padding: 4px;
+    }
+    .hamburger svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 2; }
+
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px); z-index: 99;
+      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      color: var(--text-secondary); font-size: 20px; font-weight: 600; transition: color 0.2s;
+    }
+    .mobile-menu a:hover { color: var(--text); opacity: 1; }
+    .mobile-menu a.active { color: var(--teal); }
+    .mobile-menu .nav-cta {
+      padding: 14px 36px; font-size: 17px !important; border-radius: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: block; }
+    }
+
+    /* ─── Page Hero ─────────────────────────────────── */
+    .page-hero {
+      padding: 140px 24px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-hero-glow {
+      position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 212, 170, 0.08), transparent 70%);
+      pointer-events: none;
+    }
+
+    .page-hero .section-label {
+      font-size: 12px; font-weight: 700; letter-spacing: 2.5px;
+      color: var(--teal); text-transform: uppercase; margin-bottom: 16px;
+      position: relative;
+    }
+
+    .page-hero h1 {
+      font-size: clamp(32px, 6vw, 48px); font-weight: 800;
+      letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px;
+      position: relative;
+    }
+
+    .page-hero p {
+      font-size: 18px; color: var(--text-secondary); max-width: 540px;
+      margin: 0 auto; line-height: 1.6; position: relative;
+    }
+
+    /* ─── Features Grid ────────────────────────────── */
+    .features-section { padding: 60px 0 100px; }
+
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(0, 212, 170, 0.3); }
+
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: var(--teal-dim); display: flex; align-items: center;
+      justify-content: center; margin-bottom: 20px; font-size: 24px;
+    }
+
+    .feature-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.3px; }
+    .feature-card p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
+
+    .feature-card .feature-detail {
+      margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);
+    }
+
+    .feature-card .feature-detail li {
+      font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;
+      list-style: none; padding-left: 18px; position: relative;
+    }
+    .feature-card .feature-detail li::before {
+      content: ''; position: absolute; left: 0; top: 7px;
+      width: 6px; height: 6px; border-radius: 50%; background: var(--teal);
+    }
+
+    /* ─── CTA ──────────────────────────────────────── */
+    .bottom-cta {
+      padding: 80px 0; text-align: center;
+      border-top: 1px solid var(--border);
+    }
+    .bottom-cta h2 {
+      font-size: clamp(28px, 5vw, 40px); font-weight: 800;
+      letter-spacing: -1px; margin-bottom: 16px;
+    }
+    .bottom-cta p { font-size: 17px; color: var(--text-secondary); margin-bottom: 32px; }
+    .cta-button {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 36px; background: var(--teal); color: #000;
+      border-radius: 12px; font-size: 17px; font-weight: 600;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .cta-button:hover { transform: scale(0.97); opacity: 0.9; }
+    .cta-button svg { width: 20px; height: 20px; }
+
+    /* ─── Footer ────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border); padding: 48px 0;
+    }
+    .footer-grid {
+      display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; margin-bottom: 40px;
+    }
+    .footer-brand h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .footer-brand h3 span { color: var(--teal); }
+    .footer-brand p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 300px; }
+    .footer-col h4 {
+      font-size: 13px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 16px; color: var(--text-secondary);
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 10px; }
+    .footer-col a { color: var(--text-secondary); font-size: 14px; font-weight: 400; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--teal); opacity: 1; }
+    .footer-bottom {
+      border-top: 1px solid var(--border); padding-top: 24px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    .footer-bottom p { font-size: 12px; color: var(--text-tertiary); }
+
+    @media (max-width: 768px) {
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    }
+
+    /* ─── Animations ───────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate { opacity: 0; animation: fadeUp 0.6s ease-out forwards; }
+    .animate-d1 { animation-delay: 0.1s; }
+    .animate-d2 { animation-delay: 0.2s; }
+    .animate-d3 { animation-delay: 0.3s; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="container">
+      <a href="/" class="nav-logo">nassau<span>.</span></a>
+      <ul class="nav-links">
+        <li><a href="features.html" class="active">Features</a></li>
+        <li><a href="how-it-works.html">How It Works</a></li>
+        <li><a href="pro.html">Nassau Pro</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="/" class="nav-cta">Download</a></li>
+      </ul>
+      <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-menu">
+    <a href="features.html" class="active">Features</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="pro.html">Nassau Pro</a>
+    <a href="support.html">Support</a>
+    <a href="/" class="nav-cta">Download</a>
+  </div>
+
+  <!-- Page Hero -->
+  <section class="page-hero">
+    <div class="page-hero-glow"></div>
+    <div class="section-label animate">Features</div>
+    <h1 class="animate animate-d1">Everything you need<br>on the course</h1>
+    <p class="animate animate-d2">From first tee to the 19th hole, Nassau handles the math so you can focus on your game.</p>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="features-section">
+    <div class="container">
+      <div class="features-grid">
+
+        <div class="feature-card animate">
+          <div class="feature-icon">&#9971;</div>
+          <h3>Live Scorecard</h3>
+          <p>Real-time scoring with automatic front 9, back 9, and overall 18 bet tracking for every player.</p>
+          <ul class="feature-detail">
+            <li>Score entry with par-relative coloring</li>
+            <li>Automatic bet standings after every hole</li>
+            <li>Support for 2-4 players per game</li>
+            <li>Course par auto-fill from saved courses</li>
+          </ul>
+        </div>
+
+        <div class="feature-card animate animate-d1">
+          <div class="feature-icon">&#128176;</div>
+          <h3>Instant Settlements</h3>
+          <p>Automatic payout calculations with one-tap Venmo deep links. No more arguing over who owes what.</p>
+          <ul class="feature-detail">
+            <li>Auto-calculated payouts for every bet</li>
+            <li>One-tap Venmo payment links</li>
+            <li>Track paid vs unpaid settlements</li>
+            <li>Full settlement history</li>
+          </ul>
+        </div>
+
+        <div class="feature-card animate animate-d2">
+          <div class="feature-icon">&#9889;</div>
+          <h3>Press Bets</h3>
+          <p>Initiate presses mid-round with automatic doubling. Configurable press limits protect your wallet.</p>
+          <ul class="feature-detail">
+            <li>Press any bet region mid-round</li>
+            <li>Automatic double-or-nothing calculation</li>
+            <li>Configurable press limits (1, 2, 3, or unlimited)</li>
+            <li>Press confirmation with dollar amounts</li>
+          </ul>
+        </div>
+
+        <div class="feature-card animate">
+          <div class="feature-icon">&#128101;</div>
+          <h3>Friends System</h3>
+          <p>Add friends by code, invite them to games, and track head-to-head records over time.</p>
+          <ul class="feature-detail">
+            <li>Unique 6-character friend codes</li>
+            <li>One-tap friend invites to new games</li>
+            <li>Head-to-head records and P/L tracking</li>
+            <li>Late join before hole 2</li>
+          </ul>
+        </div>
+
+        <div class="feature-card animate animate-d1">
+          <div class="feature-icon">&#128200;</div>
+          <h3>Lifetime Stats</h3>
+          <p>Track your P/L over time with interactive charts, win rate, streaks, and game type breakdowns.</p>
+          <ul class="feature-detail">
+            <li>Interactive monthly P/L chart</li>
+            <li>Win rate, streak, and best month stats</li>
+            <li>Game type performance breakdown</li>
+            <li>Performance insights and trends</li>
+          </ul>
+        </div>
+
+        <div class="feature-card animate animate-d2">
+          <div class="feature-icon">&#127948;</div>
+          <h3>Course Memory</h3>
+          <p>Save course pars once and they auto-fill for every future round. Smart course autocomplete.</p>
+          <ul class="feature-detail">
+            <li>Save full 18-hole par data per course</li>
+            <li>Smart autocomplete when typing course name</li>
+            <li>Auto-fill pars for repeat courses</li>
+            <li>20+ Georgia courses pre-loaded</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom CTA -->
+  <section class="bottom-cta">
+    <div class="container">
+      <h2>Ready to play?</h2>
+      <p>Download Nassau and elevate your golf betting game.</p>
+      <a href="/" class="cta-button">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 21.99 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 21.99C7.79 22.03 6.8 20.68 5.96 19.47C4.25 16.97 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/></svg>
+        Download for iOS
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>nassau<span>.</span></h3>
+          <p>The smartest way to bet on the golf course. Track bets, settle up, and get AI-powered insights.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="features.html">Features</a></li>
+            <li><a href="pro.html">Nassau Pro</a></li>
+            <li><a href="/">Download</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="support.html">Support</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Nassau. All rights reserved.</p>
+        <p><a href="mailto:hello@nassauapp.com">hello@nassauapp.com</a></p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

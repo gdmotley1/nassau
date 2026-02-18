@@ -103,6 +103,26 @@
 
     .nav-cta:hover { transform: scale(0.97); opacity: 0.9 !important; }
 
+    .hamburger {
+      display: none; background: none; border: none; cursor: pointer; padding: 4px;
+    }
+    .hamburger svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 2; }
+
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px); z-index: 99;
+      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      color: var(--text-secondary); font-size: 20px; font-weight: 600; transition: color 0.2s;
+    }
+    .mobile-menu a:hover { color: var(--text); opacity: 1; }
+    .mobile-menu .nav-cta {
+      padding: 14px 36px; font-size: 17px !important; border-radius: 12px;
+    }
+
     /* ─── Hero ──────────────────────────────────────── */
     .hero {
       min-height: 100vh;
@@ -570,6 +590,7 @@
     /* ─── Responsive ────────────────────────────────── */
     @media (max-width: 768px) {
       .nav-links { display: none; }
+      .hamburger { display: block; }
       .stats-bar .container { gap: 32px; }
       .footer-grid { grid-template-columns: 1fr; gap: 32px; }
       .pro-card { padding: 40px 24px; }
@@ -605,14 +626,24 @@
     <div class="container">
       <a href="#" class="nav-logo">nassau<span>.</span></a>
       <ul class="nav-links">
-        <li><a href="#features">Features</a></li>
-        <li><a href="#how-it-works">How It Works</a></li>
-        <li><a href="#pro">Nassau Pro</a></li>
+        <li><a href="features.html">Features</a></li>
+        <li><a href="how-it-works.html">How It Works</a></li>
+        <li><a href="pro.html">Nassau Pro</a></li>
         <li><a href="support.html">Support</a></li>
         <li><a href="#download" class="nav-cta">Download</a></li>
       </ul>
+      <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
     </div>
   </nav>
+  <div class="mobile-menu">
+    <a href="features.html">Features</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="pro.html">Nassau Pro</a>
+    <a href="support.html">Support</a>
+    <a href="#download" class="nav-cta">Download</a>
+  </div>
 
   <!-- Hero -->
   <section class="hero">
@@ -794,8 +825,8 @@
         <div class="footer-col">
           <h4>Product</h4>
           <ul>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#pro">Nassau Pro</a></li>
+            <li><a href="features.html">Features</a></li>
+            <li><a href="pro.html">Nassau Pro</a></li>
             <li><a href="#download">Download</a></li>
           </ul>
         </div>

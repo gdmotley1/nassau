@@ -6,76 +6,211 @@
   <title>Terms of Service - Nassau</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #000; color: #F9F9F9;
-      padding: 48px 24px; max-width: 680px; margin: 0 auto;
-      line-height: 1.7;
+
+    :root {
+      --teal: #00D4AA;
+      --teal-dim: rgba(0, 212, 170, 0.12);
+      --bg: #000000;
+      --card: #1C1C1E;
+      --border: #38383A;
+      --text: #FFFFFF;
+      --text-secondary: #8E8E93;
+      --text-tertiary: #48484A;
     }
-    a { color: #00D4AA; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .back { display: inline-block; margin-bottom: 32px; font-size: 14px; color: #8E8E93; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { opacity: 0.85; }
+
+    /* ─── Nav ───────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(56, 56, 58, 0.5);
+    }
+    nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+    .nav-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
+    .nav-logo span { color: var(--teal); }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); opacity: 1; }
+    .nav-links a.active { color: var(--teal); }
+    .nav-cta {
+      padding: 8px 20px; background: var(--teal); color: #000 !important;
+      border-radius: 8px; font-weight: 600 !important; font-size: 14px !important;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .nav-cta:hover { transform: scale(0.97); opacity: 0.9 !important; }
+    .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 2; }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px); z-index: 99;
+      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { color: var(--text-secondary); font-size: 20px; font-weight: 600; transition: color 0.2s; }
+    .mobile-menu a:hover { color: var(--text); opacity: 1; }
+    .mobile-menu a.active { color: var(--teal); }
+    .mobile-menu .nav-cta { padding: 14px 36px; font-size: 17px !important; border-radius: 12px; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: block; }
+    }
+
+    /* ─── Content ──────────────────────────────────── */
+    .page-content {
+      max-width: 680px; margin: 0 auto; padding: 120px 24px 80px;
+    }
+
     h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
-    .updated { font-size: 13px; color: #8E8E93; margin-bottom: 32px; }
+    .updated { font-size: 13px; color: var(--text-secondary); margin-bottom: 32px; }
     h2 { font-size: 20px; font-weight: 700; margin-top: 32px; margin-bottom: 12px; }
     p, li { font-size: 15px; color: #D1D1D6; margin-bottom: 12px; }
     ul { padding-left: 20px; }
+
+    /* ─── Footer ────────────────────────────────────── */
+    footer { border-top: 1px solid var(--border); padding: 48px 0; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; margin-bottom: 40px; }
+    .footer-brand h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .footer-brand h3 span { color: var(--teal); }
+    .footer-brand p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 300px; }
+    .footer-col h4 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; color: var(--text-secondary); }
+    .footer-col ul { list-style: none; padding-left: 0; }
+    .footer-col li { margin-bottom: 10px; }
+    .footer-col a { color: var(--text-secondary); font-size: 14px; font-weight: 400; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--teal); opacity: 1; }
+    .footer-bottom { border-top: 1px solid var(--border); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom p { font-size: 12px; color: var(--text-tertiary); }
+
+    @media (max-width: 768px) {
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    }
   </style>
 </head>
 <body>
-  <a href="/" class="back">&larr; Back to Nassau</a>
-  <h1>Terms of Service</h1>
-  <p class="updated">Last updated: January 2025</p>
 
-  <h2>Acceptance of Terms</h2>
-  <p>By using Nassau, you agree to these Terms of Service. If you do not agree, do not use the app.</p>
+  <!-- Nav -->
+  <nav>
+    <div class="container">
+      <a href="/" class="nav-logo">nassau<span>.</span></a>
+      <ul class="nav-links">
+        <li><a href="features.html">Features</a></li>
+        <li><a href="how-it-works.html">How It Works</a></li>
+        <li><a href="pro.html">Nassau Pro</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="/" class="nav-cta">Download</a></li>
+      </ul>
+      <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-menu">
+    <a href="features.html">Features</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="pro.html">Nassau Pro</a>
+    <a href="support.html">Support</a>
+    <a href="/" class="nav-cta">Download</a>
+  </div>
 
-  <h2>Description of Service</h2>
-  <p>Nassau is a golf betting scorecard and settlement tracking app. It helps golfers track Nassau-style bets, keep score, settle up with friends, and view performance analytics. Nassau facilitates record-keeping between players but does not process, hold, or transfer money.</p>
+  <!-- Content -->
+  <div class="page-content">
+    <h1>Terms of Service</h1>
+    <p class="updated">Last updated: January 2025</p>
 
-  <h2>User Accounts</h2>
-  <ul>
-    <li>You must provide accurate information when creating an account.</li>
-    <li>You are responsible for maintaining the security of your account.</li>
-    <li>You must be at least 18 years old to use Nassau.</li>
-  </ul>
+    <h2>Acceptance of Terms</h2>
+    <p>By using Nassau, you agree to these Terms of Service. If you do not agree, do not use the app.</p>
 
-  <h2>Acceptable Use</h2>
-  <p>You agree not to:</p>
-  <ul>
-    <li>Use the app for any unlawful purpose.</li>
-    <li>Manipulate scores or game data fraudulently.</li>
-    <li>Attempt to gain unauthorized access to other users' accounts.</li>
-    <li>Use the app in any jurisdiction where golf betting is prohibited by law.</li>
-  </ul>
+    <h2>Description of Service</h2>
+    <p>Nassau is a golf betting scorecard and settlement tracking app. It helps golfers track Nassau-style bets, keep score, settle up with friends, and view performance analytics. Nassau facilitates record-keeping between players but does not process, hold, or transfer money.</p>
 
-  <h2>Betting Disclaimer</h2>
-  <p>Nassau is a scorecard and record-keeping tool. All bets are private social wagers between friends. Nassau does not operate as a gambling platform, does not accept wagers, and does not facilitate money transmission. Users are responsible for ensuring their use of the app complies with local laws.</p>
+    <h2>User Accounts</h2>
+    <ul>
+      <li>You must provide accurate information when creating an account.</li>
+      <li>You are responsible for maintaining the security of your account.</li>
+      <li>You must be at least 18 years old to use Nassau.</li>
+    </ul>
 
-  <h2>Subscriptions</h2>
-  <ul>
-    <li>Nassau Pro is an optional premium subscription that provides additional analytics and AI-powered features.</li>
-    <li>Subscriptions are billed through Apple's App Store. Payment is charged to your Apple ID account.</li>
-    <li>Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current period.</li>
-    <li>You can manage and cancel subscriptions in your Apple ID settings.</li>
-  </ul>
+    <h2>Acceptable Use</h2>
+    <p>You agree not to:</p>
+    <ul>
+      <li>Use the app for any unlawful purpose.</li>
+      <li>Manipulate scores or game data fraudulently.</li>
+      <li>Attempt to gain unauthorized access to other users' accounts.</li>
+      <li>Use the app in any jurisdiction where golf betting is prohibited by law.</li>
+    </ul>
 
-  <h2>Settlements</h2>
-  <p>Nassau provides deep links to third-party payment services (Venmo) for convenience. We are not responsible for any payment disputes, failed transactions, or issues with third-party payment providers. All financial settlements are solely between the involved players.</p>
+    <h2>Betting Disclaimer</h2>
+    <p>Nassau is a scorecard and record-keeping tool. All bets are private social wagers between friends. Nassau does not operate as a gambling platform, does not accept wagers, and does not facilitate money transmission. Users are responsible for ensuring their use of the app complies with local laws.</p>
 
-  <h2>Intellectual Property</h2>
-  <p>All content, design, and code in Nassau are owned by us. You may not copy, modify, or distribute any part of the app without permission.</p>
+    <h2>Subscriptions</h2>
+    <ul>
+      <li>Nassau Pro is an optional premium subscription that provides additional analytics and AI-powered features.</li>
+      <li>Subscriptions are billed through Apple's App Store. Payment is charged to your Apple ID account.</li>
+      <li>Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current period.</li>
+      <li>You can manage and cancel subscriptions in your Apple ID settings.</li>
+    </ul>
 
-  <h2>Limitation of Liability</h2>
-  <p>Nassau is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the app, including but not limited to financial losses from betting activities.</p>
+    <h2>Settlements</h2>
+    <p>Nassau provides deep links to third-party payment services (Venmo) for convenience. We are not responsible for any payment disputes, failed transactions, or issues with third-party payment providers. All financial settlements are solely between the involved players.</p>
 
-  <h2>Termination</h2>
-  <p>We reserve the right to suspend or terminate your account for violations of these terms. You may delete your account at any time by contacting support.</p>
+    <h2>Intellectual Property</h2>
+    <p>All content, design, and code in Nassau are owned by us. You may not copy, modify, or distribute any part of the app without permission.</p>
 
-  <h2>Changes to Terms</h2>
-  <p>We may update these terms from time to time. Continued use of the app after changes constitutes acceptance of the new terms.</p>
+    <h2>Limitation of Liability</h2>
+    <p>Nassau is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the app, including but not limited to financial losses from betting activities.</p>
 
-  <h2>Contact</h2>
-  <p>Questions about these terms? Contact us at <a href="mailto:support@nassauapp.com">support@nassauapp.com</a>.</p>
+    <h2>Termination</h2>
+    <p>We reserve the right to suspend or terminate your account for violations of these terms. You may delete your account at any time by contacting support.</p>
+
+    <h2>Changes to Terms</h2>
+    <p>We may update these terms from time to time. Continued use of the app after changes constitutes acceptance of the new terms.</p>
+
+    <h2>Contact</h2>
+    <p>Questions about these terms? Contact us at <a href="mailto:support@nassauapp.com">support@nassauapp.com</a>.</p>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>nassau<span>.</span></h3>
+          <p>The smartest way to bet on the golf course. Track bets, settle up, and get AI-powered insights.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="features.html">Features</a></li>
+            <li><a href="pro.html">Nassau Pro</a></li>
+            <li><a href="/">Download</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="support.html">Support</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Nassau. All rights reserved.</p>
+        <p><a href="mailto:hello@nassauapp.com">hello@nassauapp.com</a></p>
+      </div>
+    </div>
+  </footer>
+
 </body>
 </html>
