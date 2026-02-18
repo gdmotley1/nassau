@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nassau - Golf Betting Made Simple</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000000;
+      color: #FFFFFF;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -120px;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 212, 170, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 8px;
+      background: rgba(0, 212, 170, 0.1);
+      color: #00D4AA;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 2.5px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: clamp(36px, 8vw, 56px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      font-weight: 400;
+      color: #8E8E93;
+      max-width: 420px;
+      line-height: 1.5;
+      margin-bottom: 48px;
+    }
+
+    .features {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 680px;
+      margin-bottom: 48px;
+    }
+
+    .feature {
+      text-align: center;
+      max-width: 180px;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(0, 212, 170, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      font-size: 20px;
+    }
+
+    .feature h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .feature p {
+      font-size: 13px;
+      color: #8E8E93;
+      line-height: 1.4;
+    }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 32px;
+      background: #00D4AA;
+      color: #000;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .cta:hover {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    .coming-soon {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #8E8E93;
+    }
+
+    footer {
+      border-top: 1px solid #2C2C2E;
+      padding: 24px;
+      text-align: center;
+    }
+
+    footer nav {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    footer a {
+      color: #8E8E93;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    footer a:hover {
+      color: #00D4AA;
+    }
+
+    .copyright {
+      font-size: 12px;
+      color: #48484A;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="hero">
+    <div class="badge">NASSAU</div>
+    <h1>Golf betting<br>made simple</h1>
+    <p class="subtitle">Track Nassau bets, settle up instantly, and get AI-powered insights to sharpen your game.</p>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">&#9971;</div>
+        <h3>Live Scoring</h3>
+        <p>Real-time scorecard with automatic bet tracking</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">&#128176;</div>
+        <h3>Instant Settle</h3>
+        <p>One-tap Venmo settlements after every round</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">&#128200;</div>
+        <h3>Smart Insights</h3>
+        <p>AI-powered press advice and matchup analytics</p>
+      </div>
+    </div>
+
+    <a href="#" class="cta">Download on the App Store</a>
+    <p class="coming-soon">Coming soon to iOS</p>
+  </main>
+
+  <footer>
+    <nav>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Service</a>
+      <a href="support.html">Support</a>
+    </nav>
+    <p class="copyright">&copy; 2025 Nassau. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>
