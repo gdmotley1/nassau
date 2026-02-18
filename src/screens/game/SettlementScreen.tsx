@@ -35,6 +35,7 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
   const { isPremium, openPaywall } = useAcePaywall();
   const confettiRef = useRef<ConfettiCannon>(null);
   const [postRound, setPostRound] = useState<PostRoundAnalysis | null>(null);
+  const [justPaidIds, setJustPaidIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!activeGameData || activeGameData.game.id !== gameId) {
@@ -101,7 +102,10 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
   };
 
   const handleMarkCash = async (settlementId: string) => {
-    await markPaid(settlementId, 'cash');
+    const result = await markPaid(settlementId, 'cash');
+    if (!result?.error) {
+      setJustPaidIds((prev) => new Set(prev).add(settlementId));
+    }
   };
 
   if (isLoading || !game) {
@@ -234,6 +238,7 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
                   toName={formatPlayerName(toPlayer ?? { guest_name: '?' })}
                   amount={s.amount}
                   isPaid={s.status === 'settled'}
+                  animatePaid={justPaidIds.has(s.id)}
                   method={s.settlement_method}
                   onVenmo={() => handleVenmo(toPlayer ?? {}, s.amount)}
                   onCash={() => handleMarkCash(s.id)}

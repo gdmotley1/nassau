@@ -57,6 +57,7 @@ interface GameWithPlayers extends GameRow {
 interface GameState {
   // Dashboard state (existing)
   activeGames: GameWithPlayers[];
+  activeGameScores: Record<string, ScoreRow[]>;
   recentGames: GameWithPlayers[];
   recentGameNets: Record<string, number>;
   monthlyNet: number;
@@ -130,6 +131,7 @@ interface GameState {
 export const useGameStore = create<GameState>((set, get) => ({
   // Dashboard state
   activeGames: [],
+  activeGameScores: {},
   recentGames: [],
   recentGameNets: {},
   monthlyNet: 0,
@@ -236,8 +238,25 @@ export const useGameStore = create<GameState>((set, get) => ({
         else if (gameNet < 0) losses++;
       });
 
+      // Fetch scores for in-progress active games (for dashboard mini-scorecard)
+      const activeGameScores: Record<string, ScoreRow[]> = {};
+      const inProgressGames = userActiveGames.filter((g: any) => g.status === 'in_progress');
+      if (inProgressGames.length > 0) {
+        const inProgressIds = inProgressGames.map((g: any) => g.id);
+        const { data: scoreData } = await supabase
+          .from('scores')
+          .select('*')
+          .in('game_id', inProgressIds)
+          .order('hole_number', { ascending: false });
+        (scoreData ?? []).forEach((s: any) => {
+          if (!activeGameScores[s.game_id]) activeGameScores[s.game_id] = [];
+          activeGameScores[s.game_id].push(s as ScoreRow);
+        });
+      }
+
       set({
         activeGames: userActiveGames as GameWithPlayers[],
+        activeGameScores,
         recentGames: userRecentGames as GameWithPlayers[],
         recentGameNets,
         monthlyNet,

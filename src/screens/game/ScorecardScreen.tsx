@@ -626,6 +626,17 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
                   </View>
                 );
               })}
+
+              {/* Bet Tracker Strip */}
+              {nassauStatus && nassauStatus.matches.length > 0 && (
+                <BetTrackerStrip
+                  nassauStatus={nassauStatus}
+                  players={players}
+                  currentUserId={user?.id ?? null}
+                  numHoles={numHoles}
+                  theme={theme}
+                />
+              )}
             </View>
           </ScrollView>
         </View>
@@ -1057,6 +1068,155 @@ const tickerStyles = StyleSheet.create({
   moneyLine: {
     fontSize: 13,
     fontWeight: '700',
+  },
+});
+
+/** Compact bet tracker strip — sits below score grid, scrolls horizontally with it */
+function BetTrackerStrip({
+  nassauStatus,
+  players,
+  currentUserId,
+  numHoles,
+  theme,
+}: {
+  nassauStatus: NassauLiveStatus;
+  players: GamePlayerRow[];
+  currentUserId: string | null;
+  numHoles: number;
+  theme: any;
+}) {
+  const myPlayerId = players.find((p) => p.user_id === currentUserId)?.id ?? null;
+
+  const getRegionPill = (
+    region: { leaderId: string | null; margin: number; isComplete: boolean; holesPlayed: number },
+    label: string,
+  ) => {
+    const isAllSquare = region.leaderId === null;
+    const isMyLead = region.leaderId === myPlayerId;
+    const leader = players.find((p) => p.id === region.leaderId);
+    const leaderInitial = leader ? formatPlayerFirstName(leader).charAt(0) : '';
+
+    const bgColor = isAllSquare
+      ? theme.semantic.border + '40'
+      : isMyLead
+      ? theme.colors.green[500] + '18'
+      : theme.colors.red[500] + '18';
+
+    const textColor = isAllSquare
+      ? theme.semantic.textSecondary
+      : isMyLead
+      ? theme.colors.green[500]
+      : theme.colors.red[500];
+
+    const statusText = isAllSquare
+      ? 'AS'
+      : isMyLead
+      ? `+${region.margin}`
+      : `-${region.margin}`;
+
+    return (
+      <View key={label} style={[betStripStyles.regionPill, { backgroundColor: bgColor }]}>
+        <Text style={[betStripStyles.regionLabel, { color: theme.semantic.textSecondary }]}>
+          {label}
+        </Text>
+        <Text style={[betStripStyles.regionStatus, { color: textColor }]}>
+          {isAllSquare ? statusText : `${leaderInitial} ${statusText}`}
+        </Text>
+        {region.isComplete && (
+          <Text style={[betStripStyles.finalTag, { color: theme.semantic.textSecondary }]}>F</Text>
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(300)}
+      style={[betStripStyles.container, { borderTopColor: theme.semantic.border }]}
+    >
+      {nassauStatus.matches.map((match, i) => {
+        const opponent = match.playerAId === myPlayerId
+          ? players.find((p) => p.id === match.playerBId)
+          : players.find((p) => p.id === match.playerAId);
+        const opponentName = opponent ? formatPlayerFirstName(opponent) : 'Opp';
+
+        const regions =
+          numHoles === 9
+            ? [{ region: match.frontNine, label: 'MATCH' }]
+            : [
+                { region: match.frontNine, label: 'F9' },
+                { region: match.backNine, label: 'B9' },
+                { region: match.overall, label: 'OVR' },
+              ];
+
+        return (
+          <View key={i} style={betStripStyles.matchRow}>
+            <View style={[betStripStyles.matchLabel, { borderRightColor: theme.semantic.border }]}>
+              <Text
+                style={[betStripStyles.matchLabelText, { color: theme.semantic.textSecondary }]}
+                numberOfLines={1}
+              >
+                vs {opponentName}
+              </Text>
+            </View>
+            <View style={betStripStyles.pillsRow}>
+              {regions.map(({ region, label }) => getRegionPill(region, label))}
+            </View>
+          </View>
+        );
+      })}
+    </Animated.View>
+  );
+}
+
+const betStripStyles = StyleSheet.create({
+  container: {
+    borderTopWidth: 0.5,
+    paddingVertical: 6,
+    marginTop: 2,
+  },
+  matchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 30,
+  },
+  matchLabel: {
+    width: 72,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    borderRightWidth: 0.5,
+  },
+  matchLabelText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  pillsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 8,
+  },
+  regionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  regionLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  regionStatus: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  finalTag: {
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
 

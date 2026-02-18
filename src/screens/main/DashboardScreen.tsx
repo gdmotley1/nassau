@@ -42,7 +42,7 @@ import { AcePremiumGate } from '../../components/AcePremiumGate';
 import { getScoringTrends, getAllMatchupRecords } from '../../services/aceService';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../navigation/types';
-import type { ScoringTrends, HeadToHeadRecord } from '../../types';
+import type { ScoringTrends, HeadToHeadRecord, ScoreRow, NassauSettings } from '../../types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -68,7 +68,7 @@ export function DashboardScreen({ navigation }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
-  const { activeGames, recentGames, recentGameNets, monthlyNet, wins, losses, isLoading, fetchDashboardData } =
+  const { activeGames, activeGameScores, recentGames, recentGameNets, monthlyNet, wins, losses, isLoading, fetchDashboardData } =
     useGameStore();
 
   const { isPremium, openPaywall } = useAcePaywall();
@@ -253,6 +253,7 @@ export function DashboardScreen({ navigation }: Props) {
               <ActiveGameCard
                 key={game.id}
                 game={game}
+                scores={activeGameScores[game.id] ?? []}
                 theme={theme}
                 onPress={() => {
                   hapticLight();
@@ -391,13 +392,57 @@ function QuickStat({
   );
 }
 
-/** Enhanced active game card with live indicator */
+/** Tiny score cell for dashboard mini-scorecard */
+function MiniScoreCell({ strokes, par, theme }: { strokes: number | null; par: number; theme: any }) {
+  const diff = strokes !== null ? strokes - par : 0;
+  const color = strokes === null
+    ? theme.semantic.textSecondary
+    : diff <= -2 ? theme.colors.teal[500]
+    : diff === -1 ? theme.colors.green[500]
+    : diff === 0 ? theme.semantic.textPrimary
+    : diff === 1 ? theme.colors.red[400]
+    : theme.colors.red[500];
+
+  const bg = strokes === null
+    ? 'transparent'
+    : diff <= -2 ? theme.colors.teal[500] + '20'
+    : diff === -1 ? theme.colors.green[500] + '15'
+    : diff >= 2 ? theme.colors.red[500] + '15'
+    : 'transparent';
+
+  return (
+    <View style={[miniStyles.cell, { backgroundColor: bg }]}>
+      <Text style={[miniStyles.text, { color }]}>
+        {strokes ?? '-'}
+      </Text>
+    </View>
+  );
+}
+
+const miniStyles = StyleSheet.create({
+  cell: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+});
+
+/** Enhanced active game card with live indicator + mini-scorecard */
 function ActiveGameCard({
   game,
+  scores,
   theme,
   onPress,
 }: {
   game: any;
+  scores: ScoreRow[];
   theme: any;
   onPress: () => void;
 }) {
@@ -405,6 +450,25 @@ function ActiveGameCard({
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
+
+  const players = game.game_players ?? [];
+  const settings = game.settings as (NassauSettings & { type: string }) | undefined;
+  const numHoles = settings?.num_holes ?? 18;
+  const holePars = settings?.hole_pars ?? Array(numHoles).fill(4);
+
+  // Compute current hole and last 3 scored holes
+  const maxHole = scores.length > 0 ? Math.max(...scores.map((s: ScoreRow) => s.hole_number)) : 0;
+  const currentHoleDisplay = Math.min(maxHole + 1, numHoles);
+
+  // Find last 3 holes where all players have scores
+  const completedHoles: number[] = [];
+  for (let h = maxHole; h >= 1 && completedHoles.length < 3; h--) {
+    const allScored = players.every((p: any) =>
+      scores.some((s: ScoreRow) => s.player_id === p.id && s.hole_number === h),
+    );
+    if (allScored) completedHoles.push(h);
+  }
+  completedHoles.reverse();
 
   return (
     <AnimatedPressable
@@ -439,14 +503,66 @@ function ActiveGameCard({
             </Text>
           </View>
         </View>
-        <Text
-          style={[styles.activeGamePlayers, { color: theme.semantic.textSecondary }]}
-          numberOfLines={1}
-        >
-          {game.game_players
-            .map((gp: any) => gp.users?.name ?? gp.guest_name ?? 'Player')
-            .join(' · ')}
-        </Text>
+
+        {/* Hole indicator */}
+        {maxHole > 0 && (
+          <Text style={[styles.holeIndicatorText, { color: theme.colors.teal[500] }]}>
+            Hole {currentHoleDisplay} of {numHoles}
+          </Text>
+        )}
+
+        {/* Mini scorecard: last 3 holes */}
+        {completedHoles.length > 0 && (
+          <View style={styles.miniScorecard}>
+            <View style={styles.miniRow}>
+              <View style={styles.miniNameCell} />
+              {completedHoles.map((h) => (
+                <View key={h} style={styles.miniHoleCell}>
+                  <Text style={[styles.miniHoleNum, { color: theme.semantic.textSecondary }]}>
+                    {h}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            {players.map((p: any) => (
+              <View key={p.id} style={styles.miniRow}>
+                <View style={styles.miniNameCell}>
+                  <Text
+                    style={[styles.miniName, { color: theme.semantic.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {(p.users?.name ?? p.guest_name ?? 'Player').split(' ')[0]}
+                  </Text>
+                </View>
+                {completedHoles.map((h) => {
+                  const score = scores.find(
+                    (s: ScoreRow) => s.player_id === p.id && s.hole_number === h,
+                  );
+                  const strokes = score?.strokes ?? null;
+                  const par = holePars[h - 1] ?? 4;
+                  return (
+                    <View key={h} style={styles.miniScoreWrapper}>
+                      <MiniScoreCell strokes={strokes} par={par} theme={theme} />
+                    </View>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Player names (only if no mini scorecard) */}
+        {completedHoles.length === 0 && (
+          <Text
+            style={[styles.activeGamePlayers, { color: theme.semantic.textSecondary }]}
+            numberOfLines={1}
+          >
+            {players
+              .map((gp: any) => gp.users?.name ?? gp.guest_name ?? 'Player')
+              .join(' · ')}
+          </Text>
+        )}
+
         <View style={[styles.continueBar, { backgroundColor: theme.colors.teal[500] + '12' }]}>
           <Text style={[styles.continueText, { color: theme.colors.teal[500] }]}>
             Continue Playing {'\u203A'}
@@ -707,6 +823,44 @@ const styles = StyleSheet.create({
   continueText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+
+  // Mini-scorecard on active game card
+  holeIndicatorText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  miniScorecard: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  miniRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 26,
+  },
+  miniNameCell: {
+    width: 52,
+    paddingRight: 4,
+  },
+  miniName: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  miniHoleCell: {
+    width: 28,
+    alignItems: 'center',
+  },
+  miniHoleNum: {
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  miniScoreWrapper: {
+    width: 28,
+    alignItems: 'center',
   },
 
   // Recent game card
