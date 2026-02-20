@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { ScoreRow, GameBetRow, SettlementRow, GamePlayerRow } from '../types';
+import type { ScoreRow, GameBetRow, SettlementRow, GamePlayerRow, WolfChoiceRow } from '../types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface GameRealtimeCallbacks {
@@ -7,6 +7,7 @@ export interface GameRealtimeCallbacks {
   onBetChange?: (bet: GameBetRow) => void;
   onSettlementChange?: (settlement: SettlementRow) => void;
   onPlayerChange?: (player: GamePlayerRow) => void;
+  onWolfChoiceChange?: (wolfChoice: WolfChoiceRow) => void;
 }
 
 /**
@@ -72,6 +73,20 @@ export function subscribeToGame(
       (payload) => {
         if (callbacks.onPlayerChange && payload.new) {
           callbacks.onPlayerChange(payload.new as unknown as GamePlayerRow);
+        }
+      },
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'wolf_choices',
+        filter: `game_id=eq.${gameId}`,
+      },
+      (payload) => {
+        if (callbacks.onWolfChoiceChange && payload.new) {
+          callbacks.onWolfChoiceChange(payload.new as unknown as WolfChoiceRow);
         }
       },
     )

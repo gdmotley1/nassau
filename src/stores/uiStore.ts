@@ -10,8 +10,11 @@ interface ToastState {
 
 export type ReactionType = 'eagle_or_better' | 'birdie' | 'par' | 'bogey' | 'double_plus';
 
+export type GameMode = 'nassau' | 'skins' | 'match_play' | 'wolf';
+
 export interface HoleReactionState {
   type: ReactionType;
+  gameMode: GameMode;
   playerName: string;
   opponentNames?: string[];
   hole: number;

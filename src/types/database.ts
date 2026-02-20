@@ -18,25 +18,41 @@ export interface NassauSettings {
   hole_handicap_ratings?: number[]; // 9 or 18 element array, stroke index per hole
 }
 
+// Shared handicap mode type
+export type HandicapMode = 'none' | 'full' | 'partial';
+
 // Skins-specific settings
 export interface SkinsSettings {
+  num_holes: 9 | 18;
+  handicap_mode: HandicapMode;
   skin_value: number;
   allow_carryovers: boolean;
   split_final_ties: boolean;
+  hole_pars?: number[];
+  hole_handicap_ratings?: number[];
 }
 
 // Wolf-specific settings
 export interface WolfSettings {
+  num_holes: 9 | 18;
+  handicap_mode: HandicapMode;
   point_value: number;
   blind_wolf: boolean;
-  lone_wolf_holes: number[];
+  wolf_order?: string[]; // game_player ids in tee order (resolved after player insert)
+  hole_pars?: number[];
+  hole_handicap_ratings?: number[];
 }
 
 // Match Play-specific settings
 export interface MatchPlaySettings {
+  num_holes: 9 | 18;
+  handicap_mode: HandicapMode;
   match_type: 'singles' | 'teams';
   total_bet: number;
-  handicap_strokes: boolean;
+  team_a?: string[]; // game_player ids
+  team_b?: string[]; // game_player ids
+  hole_pars?: number[];
+  hole_handicap_ratings?: number[];
 }
 
 export type GameSettings =
@@ -208,6 +224,109 @@ export interface SettlementBreakdownItem {
   label: string; // "Front 9", "Back 9 Press (#5)", etc.
   amount: number; // positive = won, negative = lost
 }
+
+// ============================================
+// Skins Engine Types
+// ============================================
+
+export interface SkinsHoleResult {
+  holeNumber: number;
+  winnerId: string | null; // game_player id, null if tied
+  skinsValue: number; // how many skins this hole was worth (1 + carryovers)
+  isTied: boolean;
+  playerNetScores: { playerId: string; netScore: number }[];
+}
+
+export interface SkinsLiveStatus {
+  holeResults: SkinsHoleResult[];
+  skinsPerPlayer: { playerId: string; skinsWon: number }[];
+  currentCarryover: number; // accumulated skins waiting on next hole
+  currentHole: number;
+  isRoundComplete: boolean;
+  totalSkinsAwarded: number;
+  totalSkinsAvailable: number; // num_holes
+}
+
+export interface SkinsSettlement {
+  fromPlayerId: string;
+  toPlayerId: string;
+  amount: number;
+  breakdown: SettlementBreakdownItem[];
+}
+
+// ============================================
+// Match Play Engine Types (placeholder for Pass 2)
+// ============================================
+
+export interface MatchPlayMatchStatus {
+  playerAId: string;
+  playerBId: string;
+  holeResults: HoleResult[];
+  leaderId: string | null;
+  margin: number;
+  holesPlayed: number;
+  holesRemaining: number;
+  isComplete: boolean;
+  isDormie: boolean;
+  statusText: string;
+}
+
+export interface MatchPlayLiveStatus {
+  matches: MatchPlayMatchStatus[];
+  currentHole: number;
+  isRoundComplete: boolean;
+}
+
+export interface MatchPlaySettlement {
+  fromPlayerId: string;
+  toPlayerId: string;
+  amount: number;
+  breakdown: SettlementBreakdownItem[];
+}
+
+// ============================================
+// Wolf Engine Types (placeholder for Pass 3)
+// ============================================
+
+export interface WolfHoleResult {
+  holeNumber: number;
+  wolfPlayerId: string;
+  choiceType: 'solo' | 'partner' | 'blind';
+  partnerId: string | null;
+  winningTeam: 'wolf' | 'field' | 'tie';
+  pointsPerPlayer: { playerId: string; points: number }[];
+  multiplier: number;
+}
+
+export interface WolfLiveStatus {
+  holeResults: WolfHoleResult[];
+  pointTotals: { playerId: string; totalPoints: number }[];
+  currentWolfId: string | null;
+  wolfRotation: string[];
+  currentHole: number;
+  isRoundComplete: boolean;
+  needsWolfChoice: boolean;
+  availablePartners: string[];
+}
+
+export interface WolfSettlement {
+  fromPlayerId: string;
+  toPlayerId: string;
+  amount: number;
+  breakdown: SettlementBreakdownItem[];
+}
+
+// ============================================
+// Unified Game Status Union
+// ============================================
+
+export type GameLiveStatus =
+  | ({ type: 'nassau' } & NassauLiveStatus)
+  | ({ type: 'skins' } & SkinsLiveStatus)
+  | ({ type: 'match_play' } & MatchPlayLiveStatus)
+  | ({ type: 'wolf' } & WolfLiveStatus);
+
+export type GameSettlementResult = NassauSettlement | SkinsSettlement | MatchPlaySettlement | WolfSettlement;
 
 // ============================================
 // Lifetime Stats Types

@@ -33,7 +33,7 @@ import { useAcePaywall } from '../../hooks/useAcePaywall';
 import { AcePremiumGate } from '../../components/AcePremiumGate';
 import { getPressAnalytics } from '../../services/aceService';
 import type { HomeStackScreenProps } from '../../navigation/types';
-import type { NassauSettings, NassauLiveStatus, GamePlayerRow, ScoreRow, FriendWithProfile, PressAnalytics } from '../../types';
+import type { NassauSettings, SkinsSettings, MatchPlaySettings, WolfSettings, NassauLiveStatus, SkinsLiveStatus, MatchPlayLiveStatus, WolfLiveStatus, GameLiveStatus, GamePlayerRow, ScoreRow, FriendWithProfile, PressAnalytics } from '../../types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -42,7 +42,7 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
   const theme = useTheme();
   const {
     activeGameData,
-    nassauStatus,
+    gameStatus,
     isLoading,
     loadActiveGame,
     enterScore,
@@ -51,6 +51,7 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
     initiatePress,
     subscribeToActiveGame,
     addLatePlayer,
+    submitWolfChoice,
   } = useGameStore();
 
   const user = useAuthStore((s) => s.user);
@@ -66,6 +67,7 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
   const { isPremium, openPaywall } = useAcePaywall();
   const [pressAnalytics, setPressAnalytics] = useState<PressAnalytics | null>(null);
   const [aceDismissed, setAceDismissed] = useState(false);
+  const [wolfChoiceModalVisible, setWolfChoiceModalVisible] = useState(false);
 
   useEffect(() => {
     if (!activeGameData || activeGameData.game.id !== gameId) {
@@ -87,12 +89,40 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
   const game = activeGameData?.game;
   const players = activeGameData?.players ?? [];
   const scores = activeGameData?.scores ?? [];
-  const settings = game?.settings as (NassauSettings & { type: string }) | undefined;
-  const numHoles = settings?.num_holes ?? 18;
-  const holePars = settings?.hole_pars ?? Array(numHoles).fill(4);
+  const rawSettings = game?.settings as (Record<string, any>) | undefined;
+  const gameType = (rawSettings?.type as string) ?? 'nassau';
+  const settings = rawSettings as (NassauSettings & { type: string }) | undefined;
+  const skinsSettings = rawSettings as (SkinsSettings & { type: string }) | undefined;
+  const matchPlaySettings = rawSettings as (MatchPlaySettings & { type: string }) | undefined;
+  const wolfSettings = rawSettings as (WolfSettings & { type: string }) | undefined;
+  const numHoles = (rawSettings?.num_holes ?? 18) as number;
+  const holePars = (rawSettings?.hole_pars as number[] | undefined) ?? Array(numHoles).fill(4);
 
-  const currentHole = nassauStatus?.currentHole ?? 0;
-  const allHolesScored = players.length > 0 && scores.length >= players.length * numHoles;
+  const currentHole = gameStatus?.currentHole ?? 0;
+  const nassauStatus = gameStatus?.type === 'nassau' ? gameStatus : null;
+  const skinsStatus = gameStatus?.type === 'skins' ? gameStatus : null;
+  const matchPlayStatus = gameStatus?.type === 'match_play' ? gameStatus : null;
+  const wolfStatus = gameStatus?.type === 'wolf' ? gameStatus : null;
+
+  // Match play: all matches complete means round is over (close-out possible)
+  const matchPlayRoundComplete = matchPlayStatus?.isRoundComplete ?? false;
+  const wolfRoundComplete = wolfStatus?.isRoundComplete ?? false;
+  const allHolesScored = gameType === 'match_play'
+    ? matchPlayRoundComplete
+    : gameType === 'wolf'
+      ? wolfRoundComplete
+      : players.length > 0 && scores.length >= players.length * numHoles;
+
+  // Wolf: auto-show wolf choice modal when it's the current user's turn to choose
+  const myPlayer = players.find((p) => p.user_id === user?.id);
+  const isMyWolfTurn = wolfStatus?.needsWolfChoice && wolfStatus?.currentWolfId === myPlayer?.id;
+
+  // Wolf: auto-show choice modal when it's my turn
+  useEffect(() => {
+    if (isMyWolfTurn && !wolfChoiceModalVisible) {
+      setWolfChoiceModalVisible(true);
+    }
+  }, [isMyWolfTurn]);
 
   // Late join: creator only, in_progress, <4 players, no hole 2 scores
   const isCreator = user?.id === game?.created_by;
@@ -187,6 +217,7 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
         .map((p) => formatPlayerFirstName(p));
       showHoleReaction({
         type: reactionType,
+        gameMode: gameType as 'nassau' | 'skins' | 'match_play' | 'wolf',
         playerName: formatPlayerFirstName(selectedPlayer),
         opponentNames,
         hole: selectedHole,
@@ -243,6 +274,21 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
         },
       ],
     );
+  };
+
+  const handleWolfChoice = async (choiceType: 'solo' | 'partner', partnerId: string | null) => {
+    if (!wolfStatus?.currentWolfId) return;
+    const nextHole = wolfStatus.currentHole + 1;
+    hapticMedium();
+    setWolfChoiceModalVisible(false);
+    const result = await submitWolfChoice(nextHole, wolfStatus.currentWolfId, choiceType, partnerId);
+    if (result.error) {
+      showToast(result.error, 'error');
+    } else {
+      const choiceLabel = choiceType === 'solo' ? 'Lone Wolf' : 'Picked a partner';
+      showToast(choiceLabel, 'success');
+      hapticSuccess();
+    }
   };
 
   const dismissPress = useCallback(
@@ -338,7 +384,7 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
 
       {/* Scrollable content area: ticker + bet banner + press bar + score grid */}
       <ScrollView style={styles.flex} showsVerticalScrollIndicator={false}>
-        {/* Hole Ticker */}
+        {/* Hole Ticker — Nassau only */}
         {nassauStatus && currentHole > 0 && (
           <HoleTicker
             players={players}
@@ -350,7 +396,48 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
           />
         )}
 
-        {/* Bet Status Banner */}
+        {/* Skins Status Banner */}
+        {skinsStatus && currentHole > 0 && (
+          <SkinsStatusBanner
+            skinsStatus={skinsStatus}
+            players={players}
+            scores={scores}
+            holePars={holePars}
+            numHoles={numHoles}
+            skinValue={skinsSettings?.skin_value ?? 5}
+            theme={theme}
+          />
+        )}
+
+        {/* Match Play Status Banner */}
+        {matchPlayStatus && currentHole > 0 && (
+          <MatchPlayStatusBanner
+            matchPlayStatus={matchPlayStatus}
+            players={players}
+            scores={scores}
+            holePars={holePars}
+            numHoles={numHoles}
+            totalBet={matchPlaySettings?.total_bet ?? 10}
+            theme={theme}
+          />
+        )}
+
+        {/* Wolf Status Banner */}
+        {wolfStatus && (
+          <WolfStatusBanner
+            wolfStatus={wolfStatus}
+            players={players}
+            scores={scores}
+            holePars={holePars}
+            numHoles={numHoles}
+            pointValue={wolfSettings?.point_value ?? 1}
+            isMyWolfTurn={!!isMyWolfTurn}
+            onChoose={() => setWolfChoiceModalVisible(true)}
+            theme={theme}
+          />
+        )}
+
+        {/* Bet Status Banner — Nassau only */}
         {nassauStatus && nassauStatus.matches.length > 0 && (
           <ScrollView
             horizontal
@@ -426,7 +513,7 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
           </ScrollView>
         )}
 
-        {/* Press suggestions — Ace insight first, then action buttons */}
+        {/* Press suggestions — Nassau only, Ace insight first, then action buttons */}
         {nassauStatus && (() => {
           const activePresses = nassauStatus.suggestedPresses.filter(
             (sp) => !pressedKeys.has(`${sp.parentBetId}_${sp.betType}`),
@@ -627,10 +714,43 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
                 );
               })}
 
-              {/* Bet Tracker Strip */}
+              {/* Bet Tracker Strip — Nassau */}
               {nassauStatus && nassauStatus.matches.length > 0 && (
                 <BetTrackerStrip
                   nassauStatus={nassauStatus}
+                  players={players}
+                  currentUserId={user?.id ?? null}
+                  numHoles={numHoles}
+                  theme={theme}
+                />
+              )}
+
+              {/* Skins Tracker Strip */}
+              {skinsStatus && (
+                <SkinsTrackerStrip
+                  skinsStatus={skinsStatus}
+                  players={players}
+                  numHoles={numHoles}
+                  skinValue={skinsSettings?.skin_value ?? 5}
+                  theme={theme}
+                />
+              )}
+
+              {/* Match Play Tracker Strip */}
+              {matchPlayStatus && (
+                <MatchPlayTrackerStrip
+                  matchPlayStatus={matchPlayStatus}
+                  players={players}
+                  currentUserId={user?.id ?? null}
+                  numHoles={numHoles}
+                  theme={theme}
+                />
+              )}
+
+              {/* Wolf Tracker Strip */}
+              {wolfStatus && (
+                <WolfTrackerStrip
+                  wolfStatus={wolfStatus}
                   players={players}
                   currentUserId={user?.id ?? null}
                   numHoles={numHoles}
@@ -762,6 +882,74 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
               title="Cancel"
               variant="ghost"
               onPress={() => setAddPlayerModalVisible(false)}
+              style={styles.cancelButton}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Wolf Choice Modal */}
+      <Modal
+        visible={wolfChoiceModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setWolfChoiceModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setWolfChoiceModalVisible(false)}
+        >
+          <Pressable
+            style={[styles.modalContent, { backgroundColor: theme.semantic.surface }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text style={[styles.modalTitle, { color: theme.semantic.textPrimary }]}>
+              You Are the Wolf
+            </Text>
+            <Text style={[styles.modalSubtitle, { color: theme.semantic.textSecondary }]}>
+              Hole {(wolfStatus?.currentHole ?? 0) + 1} — Choose your play
+            </Text>
+
+            {/* Partner options */}
+            <Text style={[wolfModalStyles.sectionLabel, { color: theme.semantic.textSecondary }]}>
+              PICK A PARTNER (1x)
+            </Text>
+            {(wolfStatus?.availablePartners ?? []).map((partnerId) => {
+              const partner = players.find((p) => p.id === partnerId);
+              if (!partner) return null;
+              return (
+                <Pressable
+                  key={partnerId}
+                  onPress={() => handleWolfChoice('partner', partnerId)}
+                  style={[wolfModalStyles.partnerButton, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}
+                >
+                  <Text style={[wolfModalStyles.partnerName, { color: theme.semantic.textPrimary }]}>
+                    {formatPlayerName(partner)}
+                  </Text>
+                  <Text style={[wolfModalStyles.partnerHcp, { color: theme.semantic.textSecondary }]}>
+                    HCP {formatHandicap(partner.handicap_used)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+
+            {/* Solo option */}
+            <Text style={[wolfModalStyles.sectionLabel, { color: theme.semantic.textSecondary, marginTop: 16 }]}>
+              GO SOLO
+            </Text>
+            <Pressable
+              onPress={() => handleWolfChoice('solo', null)}
+              style={[wolfModalStyles.soloButton, { backgroundColor: theme.colors.teal[500] + '15', borderColor: theme.colors.teal[500] }]}
+            >
+              <Text style={[wolfModalStyles.soloText, { color: theme.colors.teal[500] }]}>
+                {wolfSettings?.blind_wolf ? 'Blind Wolf (3x points)' : 'Lone Wolf (2x points)'}
+              </Text>
+            </Pressable>
+
+            <RHButton
+              title="Cancel"
+              variant="ghost"
+              onPress={() => setWolfChoiceModalVisible(false)}
               style={styles.cancelButton}
             />
           </Pressable>
@@ -1217,6 +1405,1019 @@ const betStripStyles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+});
+
+// ─── Skins Status Banner (rich ticker) ───────────────────────────
+
+function SkinsStatusBanner({
+  skinsStatus,
+  players,
+  scores,
+  holePars,
+  numHoles,
+  skinValue,
+  theme,
+}: {
+  skinsStatus: SkinsLiveStatus;
+  players: GamePlayerRow[];
+  scores: ScoreRow[];
+  holePars: number[];
+  numHoles: number;
+  skinValue: number;
+  theme: any;
+}) {
+  const lastHole = skinsStatus.currentHole;
+  const lastPar = holePars[lastHole - 1] ?? 4;
+  const nextHole = lastHole + 1;
+  const nextPar = holePars[lastHole] ?? 4;
+  const isRoundDone = lastHole >= numHoles;
+
+  // Last hole scores per player
+  const lastHoleScores = players.map((p) => {
+    const sc = scores.find((s) => s.player_id === p.id && s.hole_number === lastHole);
+    return { player: p, strokes: sc?.strokes ?? null };
+  });
+
+  // Last hole skin result
+  const lastHoleResult = skinsStatus.holeResults.find((r) => r.holeNumber === lastHole);
+  const skinWinner = lastHoleResult?.winnerId ? players.find((p) => p.id === lastHoleResult.winnerId) : null;
+  const skinWorth = lastHoleResult?.skinsValue ?? 1;
+
+  // Total pot remaining
+  const totalSkins = skinsStatus.skinsPerPlayer.reduce((a, b) => a + b.skinsWon, 0);
+  const skinsRemaining = skinsStatus.totalSkinsAvailable - totalSkins;
+  const potRemaining = (skinsRemaining + skinsStatus.currentCarryover) * skinValue;
+
+  function getScoreColor(strokes: number | null, par: number) {
+    if (strokes === null) return theme.semantic.textSecondary;
+    const diff = strokes - par;
+    if (diff <= -2) return theme.colors.teal[500];
+    if (diff === -1) return theme.colors.green[500];
+    if (diff === 0) return theme.semantic.textSecondary;
+    if (diff === 1) return theme.colors.red[400];
+    return theme.colors.red[500];
+  }
+
+  function getScoreLabel(strokes: number | null, par: number): string {
+    if (strokes === null) return '';
+    const diff = strokes - par;
+    if (diff <= -2) return 'Eagle';
+    if (diff === -1) return 'Birdie';
+    if (diff === 0) return 'Par';
+    if (diff === 1) return 'Bogey';
+    if (diff === 2) return 'Double';
+    return `+${diff}`;
+  }
+
+  return (
+    <Animated.View
+      entering={FadeInDown.springify().damping(18).stiffness(120)}
+      key={`skins-ticker-${lastHole}`}
+      style={[tickerStyles.container, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}
+    >
+      {/* ─── Last Hole Summary ─── */}
+      <View style={tickerStyles.section}>
+        <View style={tickerStyles.headerRow}>
+          <Text style={[tickerStyles.label, { color: theme.semantic.textSecondary }]}>
+            HOLE {lastHole}
+          </Text>
+          <Text style={[tickerStyles.parLabel, { color: theme.semantic.textSecondary }]}>
+            PAR {lastPar}
+          </Text>
+        </View>
+
+        <View style={tickerStyles.scoresRow}>
+          {lastHoleScores.map((ps) => {
+            const color = getScoreColor(ps.strokes, lastPar);
+            return (
+              <View key={ps.player.id} style={tickerStyles.playerScore}>
+                <Text style={[tickerStyles.playerName, { color: theme.semantic.textPrimary }]} numberOfLines={1}>
+                  {formatPlayerFirstName(ps.player)}
+                </Text>
+                <View style={[tickerStyles.scorePill, { backgroundColor: color + '18' }]}>
+                  <Text style={[tickerStyles.scoreNum, { color }]}>
+                    {ps.strokes ?? '-'}
+                  </Text>
+                </View>
+                <Text style={[tickerStyles.scoreLabel, { color }]}>
+                  {getScoreLabel(ps.strokes, lastPar)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+
+        {skinWinner ? (
+          <Text style={[tickerStyles.winnerText, { color: theme.colors.green[500] }]}>
+            {formatPlayerFirstName(skinWinner)} wins skin{skinWorth > 1 ? ` (${skinWorth}x — $${skinWorth * skinValue})` : ` ($${skinValue})`}
+          </Text>
+        ) : lastHoleResult?.isTied ? (
+          <Text style={[tickerStyles.winnerText, { color: theme.colors.teal[500] }]}>
+            Tied — carryover to next hole
+          </Text>
+        ) : null}
+      </View>
+
+      {/* ─── Up Next / Standings ─── */}
+      {!isRoundDone && (
+        <>
+          <View style={[tickerStyles.divider, { backgroundColor: theme.semantic.border }]} />
+
+          <View style={tickerStyles.section}>
+            <View style={tickerStyles.headerRow}>
+              <Text style={[tickerStyles.label, { color: theme.colors.teal[500] }]}>
+                UP NEXT
+              </Text>
+              <Text style={[tickerStyles.nextHoleInfo, { color: theme.semantic.textPrimary }]}>
+                Hole {nextHole}  ·  Par {nextPar}
+              </Text>
+            </View>
+
+            {skinsStatus.currentCarryover > 0 && (
+              <Text style={[tickerStyles.matchStatus, { color: theme.semantic.textPrimary }]}>
+                {skinsStatus.currentCarryover + 1} skins on the line
+                <Text style={{ color: theme.semantic.textSecondary }}>
+                  {'  ·  '}${(skinsStatus.currentCarryover + 1) * skinValue}
+                </Text>
+              </Text>
+            )}
+
+            <Text style={[tickerStyles.moneyLine, { color: theme.colors.teal[500] }]}>
+              ${potRemaining} still in play
+            </Text>
+          </View>
+        </>
+      )}
+
+      {/* ─── Skin Standings ─── */}
+      <View style={[tickerStyles.divider, { backgroundColor: theme.semantic.border }]} />
+      <View style={[tickerStyles.section, { paddingVertical: 10 }]}>
+        <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap' }}>
+          {players.map((p) => {
+            const entry = skinsStatus.skinsPerPlayer.find((sp) => sp.playerId === p.id);
+            const count = entry?.skinsWon ?? 0;
+            return (
+              <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.semantic.textPrimary }} numberOfLines={1}>
+                  {formatPlayerFirstName(p)}
+                </Text>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: count > 0 ? theme.colors.green[500] : theme.semantic.textSecondary }}>
+                  {count}
+                </Text>
+                {count > 0 && (
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: theme.colors.green[500] }}>
+                    ${count * skinValue}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
+// ─── Skins Tracker Strip ──────────────────────────────────────────
+
+function SkinsTrackerStrip({
+  skinsStatus,
+  players,
+  numHoles,
+  skinValue,
+  theme,
+}: {
+  skinsStatus: SkinsLiveStatus;
+  players: GamePlayerRow[];
+  numHoles: number;
+  skinValue: number;
+  theme: any;
+}) {
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(300)}
+      style={[skinsStripStyles.container, { borderTopColor: theme.semantic.border }]}
+    >
+      <View style={skinsStripStyles.headerRow}>
+        <View style={[skinsStripStyles.labelCell, { borderRightColor: theme.semantic.border }]}>
+          <Text style={[skinsStripStyles.labelText, { color: theme.semantic.textSecondary }]}>
+            Skin
+          </Text>
+        </View>
+        {Array.from({ length: numHoles }, (_, i) => i + 1).map((hole) => {
+          const result = skinsStatus.holeResults.find((r) => r.holeNumber === hole);
+          const winnerId = result?.winnerId ?? null;
+          const isTied = result?.isTied ?? false;
+          const winner = winnerId ? players.find((p) => p.id === winnerId) : null;
+
+          let cellBg = 'transparent';
+          let cellText = '';
+          let cellColor = theme.semantic.textSecondary;
+
+          if (!result) {
+            cellText = '';
+          } else if (winner) {
+            cellText = formatPlayerFirstName(winner).charAt(0);
+            cellBg = theme.colors.green[500] + '18';
+            cellColor = theme.colors.green[500];
+          } else if (isTied) {
+            cellText = 'C';
+            cellBg = theme.colors.teal[500] + '12';
+            cellColor = theme.colors.teal[500];
+          }
+
+          const skinsWorth = result?.skinsValue ?? 1;
+
+          return (
+            <React.Fragment key={hole}>
+              {hole === 10 && numHoles === 18 && (
+                <View style={[styles.nineDivider, { backgroundColor: theme.colors.teal[500] + '30', borderColor: theme.semantic.border }]} />
+              )}
+              <View style={[skinsStripStyles.cell, { backgroundColor: cellBg }]}>
+                <Text style={[skinsStripStyles.cellInitial, { color: cellColor }]}>
+                  {cellText}
+                </Text>
+                {skinsWorth > 1 && (
+                  <Text style={[skinsStripStyles.cellWorth, { color: cellColor }]}>
+                    {skinsWorth}x
+                  </Text>
+                )}
+              </View>
+            </React.Fragment>
+          );
+        })}
+        <View style={[skinsStripStyles.totalCell, { borderLeftColor: theme.semantic.border }]}>
+          <Text style={[skinsStripStyles.totalText, { color: theme.semantic.textSecondary }]}>
+            ${skinValue}
+          </Text>
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
+const skinsStripStyles = StyleSheet.create({
+  container: {
+    borderTopWidth: 0.5,
+    paddingVertical: 4,
+    marginTop: 2,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 28,
+  },
+  labelCell: {
+    width: 72,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    borderRightWidth: 0.5,
+  },
+  labelText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  cell: {
+    width: 36,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellInitial: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  cellWorth: {
+    fontSize: 8,
+    fontWeight: '600',
+    marginTop: -2,
+  },
+  totalCell: {
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderLeftWidth: 0.5,
+  },
+  totalText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+});
+
+// ─── Match Play Status Banner (rich ticker) ─────────────────────
+
+function MatchPlayStatusBanner({
+  matchPlayStatus,
+  players,
+  scores,
+  holePars,
+  numHoles,
+  totalBet,
+  theme,
+}: {
+  matchPlayStatus: MatchPlayLiveStatus;
+  players: GamePlayerRow[];
+  scores: ScoreRow[];
+  holePars: number[];
+  numHoles: number;
+  totalBet: number;
+  theme: any;
+}) {
+  const lastHole = matchPlayStatus.currentHole;
+  const lastPar = holePars[lastHole - 1] ?? 4;
+  const nextHole = lastHole + 1;
+  const nextPar = holePars[lastHole] ?? 4;
+  const isRoundDone = matchPlayStatus.isRoundComplete;
+
+  // Last hole scores per player
+  const lastHoleScores = players.map((p) => {
+    const sc = scores.find((s) => s.player_id === p.id && s.hole_number === lastHole);
+    return { player: p, strokes: sc?.strokes ?? null };
+  });
+
+  // First match for primary status display
+  const primaryMatch = matchPlayStatus.matches[0];
+
+  function getScoreColor(strokes: number | null, par: number) {
+    if (strokes === null) return theme.semantic.textSecondary;
+    const diff = strokes - par;
+    if (diff <= -2) return theme.colors.teal[500];
+    if (diff === -1) return theme.colors.green[500];
+    if (diff === 0) return theme.semantic.textSecondary;
+    if (diff === 1) return theme.colors.red[400];
+    return theme.colors.red[500];
+  }
+
+  function getScoreLabel(strokes: number | null, par: number): string {
+    if (strokes === null) return '';
+    const diff = strokes - par;
+    if (diff <= -2) return 'Eagle';
+    if (diff === -1) return 'Birdie';
+    if (diff === 0) return 'Par';
+    if (diff === 1) return 'Bogey';
+    if (diff === 2) return 'Double';
+    return `+${diff}`;
+  }
+
+  return (
+    <Animated.View
+      entering={FadeInDown.springify().damping(18).stiffness(120)}
+      key={`mp-ticker-${lastHole}`}
+      style={[tickerStyles.container, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}
+    >
+      {/* ─── Last Hole Summary ─── */}
+      <View style={tickerStyles.section}>
+        <View style={tickerStyles.headerRow}>
+          <Text style={[tickerStyles.label, { color: theme.semantic.textSecondary }]}>
+            HOLE {lastHole}
+          </Text>
+          <Text style={[tickerStyles.parLabel, { color: theme.semantic.textSecondary }]}>
+            PAR {lastPar}
+          </Text>
+        </View>
+
+        <View style={tickerStyles.scoresRow}>
+          {lastHoleScores.map((ps) => {
+            const color = getScoreColor(ps.strokes, lastPar);
+            return (
+              <View key={ps.player.id} style={tickerStyles.playerScore}>
+                <Text style={[tickerStyles.playerName, { color: theme.semantic.textPrimary }]} numberOfLines={1}>
+                  {formatPlayerFirstName(ps.player)}
+                </Text>
+                <View style={[tickerStyles.scorePill, { backgroundColor: color + '18' }]}>
+                  <Text style={[tickerStyles.scoreNum, { color }]}>
+                    {ps.strokes ?? '-'}
+                  </Text>
+                </View>
+                <Text style={[tickerStyles.scoreLabel, { color }]}>
+                  {getScoreLabel(ps.strokes, lastPar)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Last hole result for each match */}
+        {matchPlayStatus.matches.map((match, i) => {
+          const lastResult = match.holeResults.find((r) => r.holeNumber === lastHole);
+          const winner = lastResult?.winnerId ? players.find((p) => p.id === lastResult.winnerId) : null;
+          return (
+            <View key={i}>
+              {matchPlayStatus.matches.length > 1 && (
+                <Text style={{ fontSize: 10, fontWeight: '600', color: theme.semantic.textSecondary, marginTop: 4 }}>
+                  {formatPlayerFirstName(players.find((p) => p.id === match.playerAId) ?? ({ guest_name: 'A' } as any))} vs{' '}
+                  {formatPlayerFirstName(players.find((p) => p.id === match.playerBId) ?? ({ guest_name: 'B' } as any))}
+                </Text>
+              )}
+              {winner ? (
+                <Text style={[tickerStyles.winnerText, { color: theme.colors.green[500] }]}>
+                  {formatPlayerFirstName(winner)} wins hole
+                </Text>
+              ) : lastResult ? (
+                <Text style={[tickerStyles.winnerText, { color: theme.semantic.textSecondary }]}>
+                  Halved
+                </Text>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+
+      {/* ─── Up Next / Match Status ─── */}
+      {!isRoundDone && (
+        <>
+          <View style={[tickerStyles.divider, { backgroundColor: theme.semantic.border }]} />
+
+          <View style={tickerStyles.section}>
+            <View style={tickerStyles.headerRow}>
+              <Text style={[tickerStyles.label, { color: theme.colors.teal[500] }]}>
+                UP NEXT
+              </Text>
+              <Text style={[tickerStyles.nextHoleInfo, { color: theme.semantic.textPrimary }]}>
+                Hole {nextHole}  ·  Par {nextPar}
+              </Text>
+            </View>
+
+            {matchPlayStatus.matches.map((match, i) => {
+              const leader = match.leaderId ? players.find((p) => p.id === match.leaderId) : null;
+
+              let statusColor = theme.semantic.textPrimary;
+              if (match.isDormie) statusColor = theme.colors.red[500];
+
+              return (
+                <View key={i} style={{ marginBottom: matchPlayStatus.matches.length > 1 ? 4 : 0 }}>
+                  <Text style={[tickerStyles.matchStatus, { color: statusColor }]}>
+                    {match.statusText}
+                    <Text style={{ color: theme.semantic.textSecondary }}>
+                      {'  ·  '}{match.holesRemaining} {match.holesRemaining === 1 ? 'hole' : 'holes'} to play
+                    </Text>
+                  </Text>
+                  {match.isDormie && !match.isComplete && (
+                    <View style={{ alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginTop: 4, backgroundColor: theme.colors.red[500] + '18' }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', letterSpacing: 1, color: theme.colors.red[500] }}>
+                        DORMIE
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            <Text style={[tickerStyles.moneyLine, { color: theme.colors.teal[500] }]}>
+              ${totalBet * matchPlayStatus.matches.length} at stake
+            </Text>
+          </View>
+        </>
+      )}
+    </Animated.View>
+  );
+}
+
+// ─── Match Play Tracker Strip ──────────────────────────────────────
+
+function MatchPlayTrackerStrip({
+  matchPlayStatus,
+  players,
+  currentUserId,
+  numHoles,
+  theme,
+}: {
+  matchPlayStatus: MatchPlayLiveStatus;
+  players: GamePlayerRow[];
+  currentUserId: string | null;
+  numHoles: number;
+  theme: any;
+}) {
+  const myPlayerId = players.find((p) => p.user_id === currentUserId)?.id ?? null;
+
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(300)}
+      style={[mpStripStyles.container, { borderTopColor: theme.semantic.border }]}
+    >
+      {matchPlayStatus.matches.map((match, mi) => {
+        const opponent = match.playerAId === myPlayerId
+          ? players.find((p) => p.id === match.playerBId)
+          : players.find((p) => p.id === match.playerAId);
+        const opponentName = opponent ? formatPlayerFirstName(opponent) : 'Opp';
+
+        return (
+          <View key={mi} style={mpStripStyles.matchRow}>
+            <View style={[mpStripStyles.matchLabel, { borderRightColor: theme.semantic.border }]}>
+              <Text
+                style={[mpStripStyles.matchLabelText, { color: theme.semantic.textSecondary }]}
+                numberOfLines={1}
+              >
+                vs {opponentName}
+              </Text>
+            </View>
+            <View style={mpStripStyles.cellsRow}>
+              {Array.from({ length: numHoles }, (_, i) => i + 1).map((hole) => {
+                const result = match.holeResults.find((r) => r.holeNumber === hole);
+                let cellText = '';
+                let cellColor = theme.semantic.textSecondary;
+                let cellBg = 'transparent';
+
+                if (result) {
+                  if (result.winnerId === myPlayerId) {
+                    cellText = 'W';
+                    cellColor = theme.colors.green[500];
+                    cellBg = theme.colors.green[500] + '18';
+                  } else if (result.winnerId === null) {
+                    cellText = '-';
+                    cellColor = theme.semantic.textSecondary;
+                    cellBg = theme.semantic.border + '30';
+                  } else {
+                    cellText = 'L';
+                    cellColor = theme.colors.red[500];
+                    cellBg = theme.colors.red[500] + '18';
+                  }
+                }
+
+                return (
+                  <React.Fragment key={hole}>
+                    {hole === 10 && numHoles === 18 && (
+                      <View style={[styles.nineDivider, { backgroundColor: theme.colors.teal[500] + '30', borderColor: theme.semantic.border }]} />
+                    )}
+                    <View style={[mpStripStyles.cell, { backgroundColor: cellBg }]}>
+                      <Text style={[mpStripStyles.cellText, { color: cellColor }]}>
+                        {cellText}
+                      </Text>
+                    </View>
+                  </React.Fragment>
+                );
+              })}
+              <View style={[mpStripStyles.totalCell, { borderLeftColor: theme.semantic.border }]}>
+                <Text style={[mpStripStyles.totalText, { color: match.leaderId === myPlayerId ? theme.colors.green[500] : match.leaderId ? theme.colors.red[500] : theme.semantic.textSecondary }]}>
+                  {match.leaderId === null ? 'AS' : match.leaderId === myPlayerId ? `+${match.margin}` : `-${match.margin}`}
+                </Text>
+              </View>
+            </View>
+          </View>
+        );
+      })}
+    </Animated.View>
+  );
+}
+
+const mpStripStyles = StyleSheet.create({
+  container: {
+    borderTopWidth: 0.5,
+    paddingVertical: 4,
+    marginTop: 2,
+  },
+  matchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 28,
+  },
+  matchLabel: {
+    width: 72,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    borderRightWidth: 0.5,
+  },
+  matchLabelText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  cellsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cell: {
+    width: 36,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  totalCell: {
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderLeftWidth: 0.5,
+  },
+  totalText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+});
+
+// ─── Wolf Status Banner (rich ticker) ────────────────────────────
+
+function WolfStatusBanner({
+  wolfStatus,
+  players,
+  scores,
+  holePars,
+  numHoles,
+  pointValue,
+  isMyWolfTurn,
+  onChoose,
+  theme,
+}: {
+  wolfStatus: WolfLiveStatus;
+  players: GamePlayerRow[];
+  scores: ScoreRow[];
+  holePars: number[];
+  numHoles: number;
+  pointValue: number;
+  isMyWolfTurn: boolean;
+  onChoose: () => void;
+  theme: any;
+}) {
+  const lastHole = wolfStatus.currentHole;
+  const lastPar = holePars[lastHole - 1] ?? 4;
+  const nextHole = lastHole + 1;
+  const nextPar = holePars[lastHole] ?? 4;
+  const isRoundDone = wolfStatus.isRoundComplete;
+  const wolfPlayer = players.find((p) => p.id === wolfStatus.currentWolfId);
+
+  // Last hole scores per player
+  const lastHoleScores = players.map((p) => {
+    const sc = scores.find((s) => s.player_id === p.id && s.hole_number === lastHole);
+    return { player: p, strokes: sc?.strokes ?? null };
+  });
+
+  // Last hole wolf result
+  const lastHoleResult = wolfStatus.holeResults.find((r) => r.holeNumber === lastHole);
+  const lastWolf = lastHoleResult ? players.find((p) => p.id === lastHoleResult.wolfPlayerId) : null;
+
+  // Sort by points descending for leaderboard
+  const sorted = [...wolfStatus.pointTotals].sort((a, b) => b.totalPoints - a.totalPoints);
+
+  // Estimate total points in play
+  const holesRemaining = numHoles - lastHole;
+
+  function getScoreColor(strokes: number | null, par: number) {
+    if (strokes === null) return theme.semantic.textSecondary;
+    const diff = strokes - par;
+    if (diff <= -2) return theme.colors.teal[500];
+    if (diff === -1) return theme.colors.green[500];
+    if (diff === 0) return theme.semantic.textSecondary;
+    if (diff === 1) return theme.colors.red[400];
+    return theme.colors.red[500];
+  }
+
+  function getScoreLabel(strokes: number | null, par: number): string {
+    if (strokes === null) return '';
+    const diff = strokes - par;
+    if (diff <= -2) return 'Eagle';
+    if (diff === -1) return 'Birdie';
+    if (diff === 0) return 'Par';
+    if (diff === 1) return 'Bogey';
+    if (diff === 2) return 'Double';
+    return `+${diff}`;
+  }
+
+  const choiceLabel = lastHoleResult?.choiceType === 'blind' ? 'Blind Wolf'
+    : lastHoleResult?.choiceType === 'solo' ? 'Lone Wolf'
+    : lastHoleResult?.partnerId ? `w/ ${formatPlayerFirstName(players.find((p) => p.id === lastHoleResult.partnerId) ?? ({ guest_name: '?' } as any))}`
+    : '';
+
+  return (
+    <Animated.View
+      entering={FadeInDown.springify().damping(18).stiffness(120)}
+      key={`wolf-ticker-${lastHole}`}
+      style={[tickerStyles.container, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}
+    >
+      {/* ─── Last Hole Summary ─── */}
+      {lastHole > 0 && (
+        <View style={tickerStyles.section}>
+          <View style={tickerStyles.headerRow}>
+            <Text style={[tickerStyles.label, { color: theme.semantic.textSecondary }]}>
+              HOLE {lastHole}
+            </Text>
+            <Text style={[tickerStyles.parLabel, { color: theme.semantic.textSecondary }]}>
+              PAR {lastPar}
+            </Text>
+          </View>
+
+          <View style={tickerStyles.scoresRow}>
+            {lastHoleScores.map((ps) => {
+              const color = getScoreColor(ps.strokes, lastPar);
+              return (
+                <View key={ps.player.id} style={tickerStyles.playerScore}>
+                  <Text style={[tickerStyles.playerName, { color: theme.semantic.textPrimary }]} numberOfLines={1}>
+                    {formatPlayerFirstName(ps.player)}
+                  </Text>
+                  <View style={[tickerStyles.scorePill, { backgroundColor: color + '18' }]}>
+                    <Text style={[tickerStyles.scoreNum, { color }]}>
+                      {ps.strokes ?? '-'}
+                    </Text>
+                  </View>
+                  <Text style={[tickerStyles.scoreLabel, { color }]}>
+                    {getScoreLabel(ps.strokes, lastPar)}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+
+          {lastWolf && lastHoleResult && (
+            <Text style={[tickerStyles.winnerText, {
+              color: lastHoleResult.winningTeam === 'wolf' ? theme.colors.green[500]
+                : lastHoleResult.winningTeam === 'field' ? theme.colors.red[400]
+                : theme.semantic.textSecondary,
+            }]}>
+              {formatPlayerFirstName(lastWolf)} ({choiceLabel}) —{' '}
+              {lastHoleResult.winningTeam === 'wolf' ? 'Wolf wins'
+                : lastHoleResult.winningTeam === 'field' ? 'Pack wins'
+                : 'Push'}
+              {lastHoleResult.multiplier > 1 ? ` (${lastHoleResult.multiplier}x)` : ''}
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* ─── Up Next / Wolf Indicator ─── */}
+      {!isRoundDone && (
+        <>
+          {lastHole > 0 && <View style={[tickerStyles.divider, { backgroundColor: theme.semantic.border }]} />}
+
+          <View style={tickerStyles.section}>
+            <View style={tickerStyles.headerRow}>
+              <Text style={[tickerStyles.label, { color: theme.colors.teal[500] }]}>
+                {lastHole > 0 ? 'UP NEXT' : 'WOLF'}
+              </Text>
+              <Text style={[tickerStyles.nextHoleInfo, { color: theme.semantic.textPrimary }]}>
+                Hole {nextHole}  ·  Par {nextPar}
+              </Text>
+            </View>
+
+            {wolfPlayer && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={[tickerStyles.matchStatus, { color: theme.semantic.textPrimary }]}>
+                  {formatPlayerFirstName(wolfPlayer)} is Wolf
+                  <Text style={{ color: theme.semantic.textSecondary }}>
+                    {'  ·  '}{holesRemaining} {holesRemaining === 1 ? 'hole' : 'holes'} to play
+                  </Text>
+                </Text>
+                {isMyWolfTurn && (
+                  <Pressable
+                    onPress={onChoose}
+                    style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: theme.colors.teal[500] }}
+                  >
+                    <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>Choose</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+
+            <Text style={[tickerStyles.moneyLine, { color: theme.colors.teal[500] }]}>
+              ${pointValue} per point
+            </Text>
+          </View>
+        </>
+      )}
+
+      {/* ─── Point Standings ─── */}
+      <View style={[tickerStyles.divider, { backgroundColor: theme.semantic.border }]} />
+      <View style={[tickerStyles.section, { paddingVertical: 10 }]}>
+        <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap' }}>
+          {sorted.map((pt) => {
+            const p = players.find((pl) => pl.id === pt.playerId);
+            const isPositive = pt.totalPoints > 0;
+            const isNeg = pt.totalPoints < 0;
+            return (
+              <View key={pt.playerId} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.semantic.textPrimary }} numberOfLines={1}>
+                  {formatPlayerFirstName(p ?? ({ guest_name: '?' } as any))}
+                </Text>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: isPositive ? theme.colors.green[500] : isNeg ? theme.colors.red[500] : theme.semantic.textSecondary }}>
+                  {pt.totalPoints > 0 ? `+${pt.totalPoints}` : pt.totalPoints}
+                </Text>
+                {pt.totalPoints !== 0 && (
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: isPositive ? theme.colors.green[500] : theme.colors.red[500] }}>
+                    {isPositive ? '+' : '-'}${Math.abs(pt.totalPoints * pointValue)}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
+// ─── Wolf Tracker Strip ──────────────────────────────────────────
+
+function WolfTrackerStrip({
+  wolfStatus,
+  players,
+  currentUserId,
+  numHoles,
+  theme,
+}: {
+  wolfStatus: WolfLiveStatus;
+  players: GamePlayerRow[];
+  currentUserId: string | null;
+  numHoles: number;
+  theme: any;
+}) {
+  const myPlayerId = players.find((p) => p.user_id === currentUserId)?.id ?? null;
+
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(300)}
+      style={[wolfStripStyles.container, { borderTopColor: theme.semantic.border }]}
+    >
+      {/* Wolf indicator row — shows who was wolf and their choice */}
+      <View style={wolfStripStyles.trackerRow}>
+        <View style={[wolfStripStyles.labelCell, { borderRightColor: theme.semantic.border }]}>
+          <Text style={[wolfStripStyles.labelText, { color: theme.semantic.textSecondary }]}>
+            Wolf
+          </Text>
+        </View>
+        {Array.from({ length: numHoles }, (_, i) => i + 1).map((hole) => {
+          const result = wolfStatus.holeResults.find((r) => r.holeNumber === hole);
+          let cellText = '';
+          let cellColor = theme.semantic.textSecondary;
+          let cellBg = 'transparent';
+
+          if (result) {
+            const wolf = players.find((p) => p.id === result.wolfPlayerId);
+            cellText = wolf ? formatPlayerFirstName(wolf).charAt(0) : '?';
+
+            if (result.choiceType === 'blind') {
+              cellBg = theme.colors.teal[500] + '20';
+              cellColor = theme.colors.teal[500];
+            } else if (result.choiceType === 'solo') {
+              cellBg = theme.colors.red[500] + '12';
+              cellColor = theme.colors.red[400];
+            } else {
+              cellBg = theme.semantic.border + '30';
+            }
+          }
+
+          return (
+            <React.Fragment key={hole}>
+              {hole === 10 && numHoles === 18 && (
+                <View style={[styles.nineDivider, { backgroundColor: theme.colors.teal[500] + '30', borderColor: theme.semantic.border }]} />
+              )}
+              <View style={[wolfStripStyles.cell, { backgroundColor: cellBg }]}>
+                <Text style={[wolfStripStyles.cellText, { color: cellColor }]}>
+                  {cellText}
+                </Text>
+              </View>
+            </React.Fragment>
+          );
+        })}
+        <View style={[wolfStripStyles.totalCell, { borderLeftColor: theme.semantic.border }]}>
+          <Text style={[wolfStripStyles.totalText, { color: theme.semantic.textSecondary }]}>
+            PTS
+          </Text>
+        </View>
+      </View>
+
+      {/* My points row */}
+      <View style={wolfStripStyles.trackerRow}>
+        <View style={[wolfStripStyles.labelCell, { borderRightColor: theme.semantic.border }]}>
+          <Text style={[wolfStripStyles.labelText, { color: theme.semantic.textSecondary }]}>
+            You
+          </Text>
+        </View>
+        {Array.from({ length: numHoles }, (_, i) => i + 1).map((hole) => {
+          const result = wolfStatus.holeResults.find((r) => r.holeNumber === hole);
+          let cellText = '';
+          let cellColor = theme.semantic.textSecondary;
+          let cellBg = 'transparent';
+
+          if (result && myPlayerId) {
+            const myPts = result.pointsPerPlayer.find((pp) => pp.playerId === myPlayerId);
+            const pts = myPts?.points ?? 0;
+            if (pts > 0) {
+              cellText = `+${pts}`;
+              cellColor = theme.colors.green[500];
+              cellBg = theme.colors.green[500] + '18';
+            } else if (pts < 0) {
+              cellText = `${pts}`;
+              cellColor = theme.colors.red[500];
+              cellBg = theme.colors.red[500] + '18';
+            } else {
+              cellText = '0';
+              cellBg = theme.semantic.border + '20';
+            }
+          }
+
+          return (
+            <React.Fragment key={hole}>
+              {hole === 10 && numHoles === 18 && (
+                <View style={[styles.nineDivider, { backgroundColor: theme.colors.teal[500] + '30', borderColor: theme.semantic.border }]} />
+              )}
+              <View style={[wolfStripStyles.cell, { backgroundColor: cellBg }]}>
+                <Text style={[wolfStripStyles.cellText, { color: cellColor }]}>
+                  {cellText}
+                </Text>
+              </View>
+            </React.Fragment>
+          );
+        })}
+        <View style={[wolfStripStyles.totalCell, { borderLeftColor: theme.semantic.border }]}>
+          {(() => {
+            const myTotal = wolfStatus.pointTotals.find((pt) => pt.playerId === myPlayerId);
+            const total = myTotal?.totalPoints ?? 0;
+            return (
+              <Text style={[wolfStripStyles.totalText, {
+                color: total > 0 ? theme.colors.green[500] : total < 0 ? theme.colors.red[500] : theme.semantic.textSecondary,
+              }]}>
+                {total > 0 ? `+${total}` : total}
+              </Text>
+            );
+          })()}
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
+const wolfStripStyles = StyleSheet.create({
+  container: {
+    borderTopWidth: 0.5,
+    paddingVertical: 4,
+    marginTop: 2,
+  },
+  trackerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 28,
+  },
+  labelCell: {
+    width: 72,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    borderRightWidth: 0.5,
+  },
+  labelText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  cell: {
+    width: 36,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  totalCell: {
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderLeftWidth: 0.5,
+  },
+  totalText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+});
+
+// ─── Wolf Choice Modal Styles ──────────────────────────────────
+
+const wolfModalStyles = StyleSheet.create({
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  partnerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    marginBottom: 8,
+  },
+  partnerName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  partnerHcp: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  soloButton: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  soloText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

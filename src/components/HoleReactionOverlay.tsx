@@ -81,7 +81,7 @@ export function HoleReactionOverlay() {
       return;
     }
 
-    setMessage(getRandomMessage(reaction.type, reaction.playerName, reaction.opponentNames));
+    setMessage(getRandomMessage(reaction.type, reaction.playerName, reaction.opponentNames, reaction.gameMode));
 
     // Animate in
     overlayOpacity.value = withTiming(1, { duration: 200 });

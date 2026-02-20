@@ -60,6 +60,16 @@ export function ProfileScreen({ navigation }: ProfileStackScreenProps<'ProfileMa
   const [leaderboard, setLeaderboard] = useState<GroupLeaderboard | null>(null);
   const [leaderboardTimeframe, setLeaderboardTimeframe] = useState<'all' | 'month' | 'year'>('all');
 
+  // Scrub state — when user drags on chart, hero value updates in real-time
+  const [scrubValue, setScrubValue] = useState<number | null>(null);
+  const [scrubLabel, setScrubLabel] = useState<string | null>(null);
+  const isScrubbing = scrubValue !== null;
+
+  const handleChartScrub = useCallback((value: number | null, label: string | null) => {
+    setScrubValue(value);
+    setScrubLabel(label);
+  }, []);
+
   // Fetch stats on focus
   useFocusEffect(
     useCallback(() => {
@@ -186,7 +196,7 @@ export function ProfileScreen({ navigation }: ProfileStackScreenProps<'ProfileMa
       {/* ─── Stats Dashboard ─── */}
       {stats && stats.gamesPlayed > 0 && (
         <>
-          {/* Hero P/L */}
+          {/* Hero P/L — updates when scrubbing chart */}
           <Animated.View
             entering={FadeInDown.duration(500).delay(100)}
             style={styles.heroSection}
@@ -194,42 +204,43 @@ export function ProfileScreen({ navigation }: ProfileStackScreenProps<'ProfileMa
             <Text
               style={[styles.heroLabel, { color: theme.semantic.textSecondary }]}
             >
-              Lifetime P/L
+              {isScrubbing ? scrubLabel : 'Lifetime P/L'}
             </Text>
             <RHMoneyDisplay
-              amount={stats.totalNet}
+              amount={isScrubbing ? scrubValue! : stats.totalNet}
               size="large"
-              animate={true}
+              animate={!isScrubbing}
             />
-            <Text
-              style={[
-                styles.trendText,
-                {
-                  color:
-                    currentMonthNet > 0
-                      ? theme.colors.green[500]
-                      : currentMonthNet < 0
-                        ? theme.colors.red[500]
-                        : theme.semantic.textSecondary,
-                },
-              ]}
-            >
-              {formatTrendText(currentCumulative, previousMonthNet)}
-            </Text>
+            {!isScrubbing && (
+              <Text
+                style={[
+                  styles.trendText,
+                  {
+                    color:
+                      currentMonthNet > 0
+                        ? theme.colors.green[500]
+                        : currentMonthNet < 0
+                          ? theme.colors.red[500]
+                          : theme.semantic.textSecondary,
+                  },
+                ]}
+              >
+                {formatTrendText(currentCumulative, previousMonthNet)}
+              </Text>
+            )}
           </Animated.View>
 
-          {/* P/L Chart */}
+          {/* P/L Chart — edge-to-edge, no card wrapper */}
           <Animated.View
             entering={FadeInDown.duration(500).delay(200)}
             style={styles.chartSection}
           >
-            <RHCard>
-              <RHLineChart
-                data={stats.monthlyData}
-                height={200}
-                animated={true}
-              />
-            </RHCard>
+            <RHLineChart
+              data={stats.monthlyData}
+              height={200}
+              animated={true}
+              onScrub={handleChartScrub}
+            />
           </Animated.View>
 
           {/* Stats Grid (2x2) */}

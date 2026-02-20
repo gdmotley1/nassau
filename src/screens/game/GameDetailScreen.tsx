@@ -8,8 +8,9 @@ import { useAuthStore } from '../../stores/authStore';
 import { RHCard, RHMoneyDisplay, RHButton } from '../../components';
 import { formatPlayerName, formatDateShort } from '../../utils/format';
 import { calculateNassauSettlements, getPlayerNetAmount } from '../../engine/nassauCalculator';
+import { calculateSkinsSettlements } from '../../engine/skinsCalculator';
 import type { HomeStackScreenProps } from '../../navigation/types';
-import type { NassauSettings } from '../../types';
+import type { NassauSettings, SkinsSettings } from '../../types';
 
 export function GameDetailScreen({ route, navigation }: HomeStackScreenProps<'GameDetail'>) {
   const { gameId } = route.params;
@@ -26,18 +27,27 @@ export function GameDetailScreen({ route, navigation }: HomeStackScreenProps<'Ga
   const game = activeGameData?.game;
   const players = activeGameData?.players ?? [];
   const scores = activeGameData?.scores ?? [];
-  const settings = game?.settings as (NassauSettings & { type: string }) | undefined;
-  const holePars = settings?.hole_pars ?? Array(18).fill(4);
+  const rawSettings = game?.settings as (Record<string, any>) | undefined;
+  const gameType = rawSettings?.type ?? 'nassau';
+  const numHoles = (rawSettings?.num_holes ?? 18) as number;
+  const holePars = (rawSettings?.hole_pars as number[] | undefined) ?? Array(numHoles).fill(4);
 
   const settlements = useMemo(() => {
-    if (!activeGameData || !settings) return [];
+    if (!activeGameData || !rawSettings) return [];
+    if (gameType === 'skins') {
+      return calculateSkinsSettlements({
+        settings: rawSettings as SkinsSettings,
+        players: activeGameData.players,
+        scores: activeGameData.scores,
+      });
+    }
     return calculateNassauSettlements({
-      settings,
+      settings: rawSettings as NassauSettings,
       players: activeGameData.players,
       bets: activeGameData.bets,
       scores: activeGameData.scores,
     });
-  }, [activeGameData, settings]);
+  }, [activeGameData, rawSettings, gameType]);
 
   const myPlayer = players.find((p) => p.user_id === user?.id);
   const myNet = myPlayer ? getPlayerNetAmount(myPlayer.id, settlements) : 0;
@@ -96,7 +106,7 @@ export function GameDetailScreen({ route, navigation }: HomeStackScreenProps<'Ga
                     Hole
                   </Text>
                 </View>
-                {Array.from({ length: 18 }, (_, i) => (
+                {Array.from({ length: numHoles }, (_, i) => (
                   <View
                     key={i}
                     style={[styles.holeCell, { borderColor: theme.semantic.border }]}

@@ -38,7 +38,7 @@ import { formatHandicap } from '../../utils/format';
 import { springs } from '../../utils/animations';
 import { searchCourses, getCourseWithHoles, saveOrUpdateCourse, linkGameToCourse } from '../../services/courseService';
 import type { NewGameStackScreenProps } from '../../navigation/types';
-import type { NassauSettings, FriendWithProfile, CourseRow } from '../../types';
+import type { NassauSettings, SkinsSettings, MatchPlaySettings, WolfSettings, GameType, FriendWithProfile, CourseRow } from '../../types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -55,8 +55,8 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
   const [step, setStep] = useState(0);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Step 1: Game type (only Nassau for now)
-  const [gameType] = useState<'nassau'>('nassau');
+  // Step 1: Game type
+  const [gameType, setGameType] = useState<GameType>('nassau');
 
   // Step 2: Players (friend-based)
   const [selectedFriends, setSelectedFriends] = useState<FriendWithProfile[]>([]);
@@ -151,6 +151,19 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
     }
   };
 
+  // Skins-specific stakes
+  const [skinValue, setSkinValue] = useState(5);
+  const [carryover, setCarryover] = useState(true);
+  const [splitFinalTies, setSplitFinalTies] = useState(false);
+
+  // Match Play-specific stakes
+  const [matchBet, setMatchBet] = useState(10);
+  const [matchType, setMatchType] = useState<'singles' | 'teams'>('singles');
+
+  // Wolf-specific stakes
+  const [pointValue, setPointValue] = useState(1);
+  const [blindWolf, setBlindWolf] = useState(true);
+
   // Step 4: Rules
   const [autoPress, setAutoPress] = useState(true);
   const [pressLimit, setPressLimit] = useState(0); // 0 = unlimited
@@ -161,13 +174,23 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
   const canGoNext = useCallback(() => {
     switch (step) {
       case 0: return true; // Game type selected
-      case 1: return selectedFriends.length >= 1; // Need at least 1 friend (2 total)
-      case 2: return frontBet > 0 || (numHoles === 18 && (backBet > 0 || overallBet > 0));
+      case 1: {
+        if (gameType === 'wolf') return selectedFriends.length === 3; // Exactly 4 players
+        if (gameType === 'match_play' && matchType === 'teams') {
+          return selectedFriends.length === 3; // Exactly 4 players for teams
+        }
+        return selectedFriends.length >= 1; // Need at least 1 friend (2 total)
+      }
+      case 2:
+        if (gameType === 'skins') return skinValue > 0;
+        if (gameType === 'match_play') return matchBet > 0;
+        if (gameType === 'wolf') return pointValue > 0;
+        return frontBet > 0 || (numHoles === 18 && (backBet > 0 || overallBet > 0));
       case 3: return true; // Rules always valid
       case 4: return true; // Confirm
       default: return false;
     }
-  }, [step, selectedFriends.length, frontBet, backBet, overallBet, numHoles]);
+  }, [step, selectedFriends.length, frontBet, backBet, overallBet, numHoles, gameType, skinValue, matchBet, matchType, pointValue]);
 
   const cyclePar = (holeIndex: number) => {
     hapticLight();
@@ -181,15 +204,51 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
     if (!user) return;
     setIsCreating(true);
 
-    const settings: NassauSettings = {
-      num_holes: numHoles,
-      auto_press: autoPress,
-      press_limit: pressLimit,
-      handicap_mode: handicapMode,
-      front_bet: frontBet,
-      back_bet: numHoles === 9 ? 0 : backBet,
-      overall_bet: numHoles === 9 ? 0 : overallBet,
-      hole_pars: holePars,
+    const buildSettings = () => {
+      if (gameType === 'skins') {
+        const s: SkinsSettings = {
+          skin_value: skinValue,
+          allow_carryovers: carryover,
+          split_final_ties: splitFinalTies,
+          num_holes: numHoles,
+          handicap_mode: handicapMode,
+          hole_pars: holePars,
+        };
+        return { type: 'skins' as const, ...s };
+      }
+      if (gameType === 'match_play') {
+        const s: MatchPlaySettings = {
+          num_holes: numHoles,
+          handicap_mode: handicapMode,
+          match_type: matchType,
+          total_bet: matchBet,
+          hole_pars: holePars,
+          // team_a and team_b are resolved in createMatchPlayGame after players are inserted
+        };
+        return { type: 'match_play' as const, ...s };
+      }
+      if (gameType === 'wolf') {
+        const s: WolfSettings = {
+          num_holes: numHoles,
+          handicap_mode: handicapMode,
+          point_value: pointValue,
+          blind_wolf: blindWolf,
+          hole_pars: holePars,
+          // wolf_order resolved in createWolfGame after players are inserted
+        };
+        return { type: 'wolf' as const, ...s };
+      }
+      const s: NassauSettings = {
+        num_holes: numHoles,
+        auto_press: autoPress,
+        press_limit: pressLimit,
+        handicap_mode: handicapMode,
+        front_bet: frontBet,
+        back_bet: numHoles === 9 ? 0 : backBet,
+        overall_bet: numHoles === 9 ? 0 : overallBet,
+        hole_pars: holePars,
+      };
+      return { type: 'nassau' as const, ...s };
     };
 
     const playerInputs = [
@@ -209,7 +268,7 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
       })),
     ];
 
-    const result = await createGame(user.id, courseName || 'Unknown Course', settings, playerInputs);
+    const result = await createGame(user.id, gameType, courseName || 'Unknown Course', buildSettings(), playerInputs);
 
     setIsCreating(false);
 
@@ -231,11 +290,19 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
 
     // Reset form so returning to this tab shows a fresh screen
     setStep(0);
+    setGameType('nassau');
     setSelectedFriends([]);
     setNumHoles(18);
     setFrontBet(5);
     setBackBet(5);
     setOverallBet(5);
+    setSkinValue(5);
+    setCarryover(true);
+    setSplitFinalTies(false);
+    setMatchBet(10);
+    setMatchType('singles');
+    setPointValue(1);
+    setBlindWolf(true);
     setCourseName('');
     setHolePars([...DEFAULT_PARS_18]);
     setCourseSuggestions([]);
@@ -250,12 +317,24 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
   };
 
   const totalPot = (() => {
+    if (gameType === 'skins') return skinValue * numHoles;
+    if (gameType === 'match_play') {
+      if (matchType === 'teams') return matchBet; // One team match
+      const numPairs = (totalPlayers * (totalPlayers - 1)) / 2;
+      return numPairs * matchBet;
+    }
+    if (gameType === 'wolf') return pointValue * numHoles * 2; // Approximate max
     const numPairs = (totalPlayers * (totalPlayers - 1)) / 2;
     if (numHoles === 9) return numPairs * frontBet;
     return numPairs * (frontBet + backBet + overallBet);
   })();
 
   // ─── Step Renderers ─────────────────────────────────────────
+
+  const handleSelectGameType = (type: GameType) => {
+    hapticMedium();
+    setGameType(type);
+  };
 
   const renderStep0 = () => (
     <Animated.View entering={FadeIn.duration(300)} style={styles.stepContent}>
@@ -265,23 +344,35 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
 
       <GameTypeCard
         title="Nassau"
-        description="The classic. Play 9 or 18 holes with match play bets."
+        description="Front 9, back 9, and overall match play bets."
         isSelected={gameType === 'nassau'}
-        onPress={() => hapticLight()}
+        onPress={() => handleSelectGameType('nassau')}
         theme={theme}
       />
 
-      {['Skins', 'Wolf', 'Match Play'].map((type) => (
-        <GameTypeCard
-          key={type}
-          title={type}
-          description="Coming soon"
-          isSelected={false}
-          onPress={() => {}}
-          disabled
-          theme={theme}
-        />
-      ))}
+      <GameTypeCard
+        title="Skins"
+        description="Win a skin for lowest score on each hole. Ties carry over."
+        isSelected={gameType === 'skins'}
+        onPress={() => handleSelectGameType('skins')}
+        theme={theme}
+      />
+
+      <GameTypeCard
+        title="Match Play"
+        description="Hole-by-hole competition. Win the hole, win the point."
+        isSelected={gameType === 'match_play'}
+        onPress={() => handleSelectGameType('match_play')}
+        theme={theme}
+      />
+
+      <GameTypeCard
+        title="Wolf"
+        description="4-player rotating wolf. Pick a partner or go solo each hole."
+        isSelected={gameType === 'wolf'}
+        onPress={() => handleSelectGameType('wolf')}
+        theme={theme}
+      />
     </Animated.View>
   );
 
@@ -291,7 +382,7 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
         Select Players
       </Text>
       <Text style={[styles.stepSubtitle, { color: theme.semantic.textSecondary }]}>
-        {totalPlayers} of 4 players (min 2)
+        {totalPlayers} of 4 players{gameType === 'wolf' ? ' (exactly 4 required)' : gameType === 'match_play' && matchType === 'teams' ? ' (exactly 4 for teams)' : ' (min 2)'}
       </Text>
 
       {/* Creator (always shown, non-removable) */}
@@ -419,30 +510,134 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
         </Pressable>
       </View>
 
-      <View style={styles.stakesSection}>
-        <RHNumberStepper
-          label={numHoles === 9 ? 'Bet per Match' : 'Front 9'}
-          value={frontBet}
-          onChange={setFrontBet}
-          presets={[2, 5, 10, 20]}
-        />
-        <View style={{ opacity: numHoles === 9 ? 0.3 : 1 }} pointerEvents={numHoles === 9 ? 'none' : 'auto'}>
+      {/* Mode-specific stakes */}
+      {gameType === 'skins' ? (
+        <View style={styles.stakesSection}>
           <RHNumberStepper
-            label="Back 9"
-            value={backBet}
-            onChange={setBackBet}
+            label="Skin Value"
+            value={skinValue}
+            onChange={setSkinValue}
             presets={[2, 5, 10, 20]}
           />
+          <View style={[styles.skinsPotPreview, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}>
+            <Text style={[styles.skinsPotLabel, { color: theme.semantic.textSecondary }]}>
+              Total pot per player
+            </Text>
+            <Text style={[styles.skinsPotValue, { color: theme.colors.teal[500] }]}>
+              ${skinValue * numHoles}
+            </Text>
+            <Text style={[styles.skinsPotDesc, { color: theme.semantic.textSecondary }]}>
+              {numHoles} holes x ${skinValue} per skin
+            </Text>
+          </View>
         </View>
-        <View style={{ opacity: numHoles === 9 ? 0.3 : 1 }} pointerEvents={numHoles === 9 ? 'none' : 'auto'}>
+      ) : gameType === 'match_play' ? (
+        <View style={styles.stakesSection}>
+          {/* Singles/Teams toggle */}
+          <View style={[styles.holeToggleContainer, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}>
+            <Pressable
+              onPress={() => { hapticMedium(); setMatchType('singles'); }}
+              style={[
+                styles.holeToggleOption,
+                matchType === 'singles' && { backgroundColor: theme.colors.teal[500] },
+              ]}
+            >
+              <Text style={[
+                styles.holeToggleText,
+                { color: matchType === 'singles' ? '#FFFFFF' : theme.semantic.textSecondary },
+              ]}>
+                Singles
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => { hapticMedium(); setMatchType('teams'); }}
+              style={[
+                styles.holeToggleOption,
+                matchType === 'teams' && { backgroundColor: theme.colors.teal[500] },
+              ]}
+            >
+              <Text style={[
+                styles.holeToggleText,
+                { color: matchType === 'teams' ? '#FFFFFF' : theme.semantic.textSecondary },
+              ]}>
+                Teams (2v2)
+              </Text>
+            </Pressable>
+          </View>
+
+          {matchType === 'teams' && totalPlayers !== 4 && (
+            <Text style={[styles.matchPlayNote, { color: theme.colors.red[500] }]}>
+              Teams requires exactly 4 players
+            </Text>
+          )}
+
           <RHNumberStepper
-            label="Overall 18"
-            value={overallBet}
-            onChange={setOverallBet}
+            label="Match Bet"
+            value={matchBet}
+            onChange={setMatchBet}
+            presets={[5, 10, 20, 50]}
+          />
+
+          <View style={[styles.skinsPotPreview, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}>
+            <Text style={[styles.skinsPotLabel, { color: theme.semantic.textSecondary }]}>
+              {matchType === 'teams' ? 'Team match bet' : 'Total pot'}
+            </Text>
+            <Text style={[styles.skinsPotValue, { color: theme.colors.teal[500] }]}>
+              ${totalPot}
+            </Text>
+            <Text style={[styles.skinsPotDesc, { color: theme.semantic.textSecondary }]}>
+              {matchType === 'teams'
+                ? `$${matchBet} per team`
+                : `${(totalPlayers * (totalPlayers - 1)) / 2} matches x $${matchBet}`}
+            </Text>
+          </View>
+        </View>
+      ) : gameType === 'wolf' ? (
+        <View style={styles.stakesSection}>
+          <RHNumberStepper
+            label="Point Value"
+            value={pointValue}
+            onChange={setPointValue}
+            presets={[1, 2, 5, 10]}
+          />
+          <View style={[styles.skinsPotPreview, { backgroundColor: theme.semantic.card, borderColor: theme.semantic.border }]}>
+            <Text style={[styles.skinsPotLabel, { color: theme.semantic.textSecondary }]}>
+              Estimated max exposure
+            </Text>
+            <Text style={[styles.skinsPotValue, { color: theme.colors.teal[500] }]}>
+              ${totalPot}
+            </Text>
+            <Text style={[styles.skinsPotDesc, { color: theme.semantic.textSecondary }]}>
+              Pairwise points x ${pointValue} per point
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.stakesSection}>
+          <RHNumberStepper
+            label={numHoles === 9 ? 'Bet per Match' : 'Front 9'}
+            value={frontBet}
+            onChange={setFrontBet}
             presets={[2, 5, 10, 20]}
           />
+          <View style={{ opacity: numHoles === 9 ? 0.3 : 1 }} pointerEvents={numHoles === 9 ? 'none' : 'auto'}>
+            <RHNumberStepper
+              label="Back 9"
+              value={backBet}
+              onChange={setBackBet}
+              presets={[2, 5, 10, 20]}
+            />
+          </View>
+          <View style={{ opacity: numHoles === 9 ? 0.3 : 1 }} pointerEvents={numHoles === 9 ? 'none' : 'auto'}>
+            <RHNumberStepper
+              label="Overall 18"
+              value={overallBet}
+              onChange={setOverallBet}
+              presets={[2, 5, 10, 20]}
+            />
+          </View>
         </View>
-      </View>
+      )}
 
       <Text style={[styles.sectionLabel, { color: theme.semantic.textSecondary }]}>
         HOLE PARS (TAP TO CHANGE)
@@ -467,71 +662,137 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
         Game Rules
       </Text>
 
-      <View style={styles.ruleRow}>
-        <View>
-          <Text style={[styles.ruleLabel, { color: theme.semantic.textPrimary }]}>
-            Auto-Press
-          </Text>
-          <Text style={[styles.ruleDesc, { color: theme.semantic.textSecondary }]}>
-            Suggest press when 2+ down
-          </Text>
-        </View>
-        <ToggleButton
-          isOn={autoPress}
-          onToggle={() => { hapticLight(); setAutoPress(!autoPress); }}
-          theme={theme}
-        />
-      </View>
+      {/* Mode-specific rules */}
+      {gameType === 'skins' ? (
+        <>
+          <View style={styles.ruleRow}>
+            <View>
+              <Text style={[styles.ruleLabel, { color: theme.semantic.textPrimary }]}>
+                Carryover
+              </Text>
+              <Text style={[styles.ruleDesc, { color: theme.semantic.textSecondary }]}>
+                Tied holes carry value to next hole
+              </Text>
+            </View>
+            <ToggleButton
+              isOn={carryover}
+              onToggle={() => { hapticLight(); setCarryover(!carryover); }}
+              theme={theme}
+            />
+          </View>
 
-      {autoPress && (
-        <View style={styles.ruleRow}>
-          <View>
-            <Text style={[styles.ruleLabel, { color: theme.semantic.textPrimary }]}>
-              Press Limit
-            </Text>
-            <Text style={[styles.ruleDesc, { color: theme.semantic.textSecondary }]}>
-              Max presses per bet (0 = unlimited)
-            </Text>
+          <View style={styles.ruleRow}>
+            <View>
+              <Text style={[styles.ruleLabel, { color: theme.semantic.textPrimary }]}>
+                Split Final Ties
+              </Text>
+              <Text style={[styles.ruleDesc, { color: theme.semantic.textSecondary }]}>
+                Split carried skins on last hole if tied
+              </Text>
+            </View>
+            <ToggleButton
+              isOn={splitFinalTies}
+              onToggle={() => { hapticLight(); setSplitFinalTies(!splitFinalTies); }}
+              theme={theme}
+            />
           </View>
-          <View style={styles.limitRow}>
-            {[0, 1, 2, 3].map((val) => (
-              <Pressable
-                key={val}
-                onPress={() => { hapticLight(); setPressLimit(val); }}
-                style={[
-                  styles.limitChip,
-                  {
-                    backgroundColor: pressLimit === val
-                      ? theme.colors.teal[500]
-                      : theme.semantic.card,
-                    borderColor: pressLimit === val
-                      ? theme.colors.teal[500]
-                      : theme.semantic.border,
-                  },
-                ]}
-              >
-                <Text
-                  style={{
-                    color: pressLimit === val ? '#FFF' : theme.semantic.textPrimary,
-                    fontSize: 14,
-                    fontWeight: '600',
-                  }}
-                >
-                  {val === 0 ? 'No limit' : `${val}`}
+        </>
+      ) : gameType === 'match_play' ? (
+        <Text style={[styles.matchPlayNote, { color: theme.semantic.textSecondary }]}>
+          Match play has no additional rules. Each hole is won by the lowest net score. Match closes out when the lead exceeds holes remaining.
+        </Text>
+      ) : gameType === 'wolf' ? (
+        <>
+          <View style={styles.ruleRow}>
+            <View>
+              <Text style={[styles.ruleLabel, { color: theme.semantic.textPrimary }]}>
+                Blind Wolf
+              </Text>
+              <Text style={[styles.ruleDesc, { color: theme.semantic.textSecondary }]}>
+                Go solo before seeing tee shots for 3x points
+              </Text>
+            </View>
+            <ToggleButton
+              isOn={blindWolf}
+              onToggle={() => { hapticLight(); setBlindWolf(!blindWolf); }}
+              theme={theme}
+            />
+          </View>
+          <Text style={[styles.matchPlayNote, { color: theme.semantic.textSecondary }]}>
+            Wolf rotates each hole. The wolf picks a partner (1x) or goes solo (2x). Best ball per side determines the winner.{blindWolf ? ' Declaring blind wolf before tee shots earns 3x points.' : ''}
+          </Text>
+        </>
+      ) : (
+        <>
+          {/* Nassau-specific rules */}
+          <View style={styles.ruleRow}>
+            <View>
+              <Text style={[styles.ruleLabel, { color: theme.semantic.textPrimary }]}>
+                Auto-Press
+              </Text>
+              <Text style={[styles.ruleDesc, { color: theme.semantic.textSecondary }]}>
+                Suggest press when 2+ down
+              </Text>
+            </View>
+            <ToggleButton
+              isOn={autoPress}
+              onToggle={() => { hapticLight(); setAutoPress(!autoPress); }}
+              theme={theme}
+            />
+          </View>
+
+          {autoPress && (
+            <View style={styles.ruleRow}>
+              <View>
+                <Text style={[styles.ruleLabel, { color: theme.semantic.textPrimary }]}>
+                  Press Limit
                 </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
+                <Text style={[styles.ruleDesc, { color: theme.semantic.textSecondary }]}>
+                  Max presses per bet (0 = unlimited)
+                </Text>
+              </View>
+              <View style={styles.limitRow}>
+                {[0, 1, 2, 3].map((val) => (
+                  <Pressable
+                    key={val}
+                    onPress={() => { hapticLight(); setPressLimit(val); }}
+                    style={[
+                      styles.limitChip,
+                      {
+                        backgroundColor: pressLimit === val
+                          ? theme.colors.teal[500]
+                          : theme.semantic.card,
+                        borderColor: pressLimit === val
+                          ? theme.colors.teal[500]
+                          : theme.semantic.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: pressLimit === val ? '#FFF' : theme.semantic.textPrimary,
+                        fontSize: 14,
+                        fontWeight: '600',
+                      }}
+                    >
+                      {val === 0 ? 'No limit' : `${val}`}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+        </>
       )}
 
+      {/* Handicap mode — shared across all game types */}
       <View style={styles.ruleRow}>
         <View>
           <Text style={[styles.ruleLabel, { color: theme.semantic.textPrimary }]}>
             Handicap Mode
           </Text>
           <Text style={[styles.ruleDesc, { color: theme.semantic.textSecondary }]}>
-            How strokes are allocated
+            {gameType === 'skins' || gameType === 'wolf' ? 'Strokes off the low player' : gameType === 'match_play' ? 'Pairwise stroke difference' : 'How strokes are allocated'}
           </Text>
         </View>
       </View>
@@ -567,6 +828,16 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
     </Animated.View>
   );
 
+  const formatGameTypeName = (type: GameType) => {
+    switch (type) {
+      case 'nassau': return 'Nassau';
+      case 'skins': return 'Skins';
+      case 'match_play': return 'Match Play';
+      case 'wolf': return 'Wolf';
+      default: return type;
+    }
+  };
+
   const renderStep4 = () => (
     <Animated.View entering={FadeIn.duration(300)} style={styles.stepContent}>
       <Text style={[styles.stepTitle, { color: theme.semantic.textPrimary }]}>
@@ -579,7 +850,7 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
             GAME TYPE
           </Text>
           <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
-            Nassau
+            {formatGameTypeName(gameType)}
           </Text>
         </View>
 
@@ -605,9 +876,15 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
             STAKES ({numHoles} HOLES)
           </Text>
           <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
-            {numHoles === 9
-              ? `$${frontBet} per match`
-              : `Front: $${frontBet} / Back: $${backBet} / Overall: $${overallBet}`}
+            {gameType === 'skins'
+              ? `$${skinValue} per skin`
+              : gameType === 'match_play'
+                ? `$${matchBet} per match (${matchType === 'teams' ? 'Teams 2v2' : 'Singles'})`
+                : gameType === 'wolf'
+                  ? `$${pointValue} per point`
+                  : numHoles === 9
+                    ? `$${frontBet} per match`
+                    : `Front: $${frontBet} / Back: $${backBet} / Overall: $${overallBet}`}
           </Text>
         </View>
 
@@ -632,9 +909,33 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
           <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
             Handicap: {handicapMode === 'none' ? 'Scratch' : handicapMode === 'full' ? 'Full' : 'Partial (80%)'}
           </Text>
-          <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
-            Auto-press: {autoPress ? `On${pressLimit > 0 ? ` (max ${pressLimit})` : ''}` : 'Off'}
-          </Text>
+          {gameType === 'skins' ? (
+            <>
+              <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
+                Carryover: {carryover ? 'On' : 'Off'}
+              </Text>
+              <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
+                Split final ties: {splitFinalTies ? 'On' : 'Off'}
+              </Text>
+            </>
+          ) : gameType === 'match_play' ? (
+            <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
+              Close-out when lead exceeds holes remaining
+            </Text>
+          ) : gameType === 'wolf' ? (
+            <>
+              <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
+                Blind wolf: {blindWolf ? 'On (3x)' : 'Off'}
+              </Text>
+              <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
+                Partner: 1x / Solo: 2x / Blind: 3x
+              </Text>
+            </>
+          ) : (
+            <Text style={[styles.confirmValue, { color: theme.semantic.textPrimary }]}>
+              Auto-press: {autoPress ? `On${pressLimit > 0 ? ` (max ${pressLimit})` : ''}` : 'Off'}
+            </Text>
+          )}
         </View>
 
         {courseName ? (
@@ -942,6 +1243,30 @@ const styles = StyleSheet.create({
 
   // Stakes
   stakesSection: { gap: 20 },
+  skinsPotPreview: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  skinsPotLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    letterSpacing: 0.5,
+  },
+  skinsPotValue: {
+    fontSize: 32,
+    fontWeight: '800' as const,
+    letterSpacing: -1,
+  },
+  skinsPotDesc: {
+    fontSize: 13,
+  },
+  matchPlayNote: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
   sectionLabel: {
     fontSize: 12,
     fontWeight: '600',

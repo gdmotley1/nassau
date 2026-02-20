@@ -5,6 +5,7 @@ export type {
   PaidStatus,
   SettlementStatus,
   SettlementMethod,
+  HandicapMode,
   NassauSettings,
   SkinsSettings,
   WolfSettings,
@@ -17,6 +18,7 @@ export type {
   ScoreRow,
   SettlementRow,
   WolfChoiceRow,
+  // Nassau engine types
   NassauMatchStatus,
   BetRegionStatus,
   HoleResult,
@@ -25,13 +27,31 @@ export type {
   SuggestedPress,
   NassauSettlement,
   SettlementBreakdownItem,
+  // Skins engine types
+  SkinsHoleResult,
+  SkinsLiveStatus,
+  SkinsSettlement,
+  // Match Play engine types
+  MatchPlayMatchStatus,
+  MatchPlayLiveStatus,
+  MatchPlaySettlement,
+  // Wolf engine types
+  WolfHoleResult,
+  WolfLiveStatus,
+  WolfSettlement,
+  // Unified game status
+  GameLiveStatus,
+  GameSettlementResult,
+  // Lifetime stats types
   MonthlyDataPoint,
   GameTypeStats,
   PerformanceInsight,
   RecentGameSummary,
   LifetimeStats,
+  // Friend types
   FriendshipRow,
   FriendWithProfile,
+  // Composite types
   GameWithPlayers,
   FullGameData,
   Database,

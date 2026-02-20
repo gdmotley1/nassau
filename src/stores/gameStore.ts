@@ -6,6 +6,9 @@ import {
   completeGame as completeGameService,
   cancelGame as cancelGameService,
   createNassauGame,
+  createSkinsGame,
+  createMatchPlayGame,
+  createWolfGame,
   createPressBet,
   addLatePlayer as addLatePlayerService,
   fetchUserGames,
@@ -23,6 +26,22 @@ import {
   calculateNassauStatus,
   calculateNassauSettlements,
 } from '../engine/nassauCalculator';
+import {
+  calculateSkinsStatus,
+  calculateSkinsSettlements,
+} from '../engine/skinsCalculator';
+import {
+  calculateMatchPlayStatus,
+  calculateMatchPlaySettlements,
+} from '../engine/matchPlayCalculator';
+import {
+  calculateWolfStatus,
+  calculateWolfSettlements,
+} from '../engine/wolfCalculator';
+import {
+  submitWolfChoice as submitWolfChoiceService,
+  fetchWolfChoices,
+} from '../services/wolfService';
 import type {
   GameRow,
   GamePlayerRow,
@@ -30,9 +49,14 @@ import type {
   GameType,
   ScoreRow,
   SettlementRow,
+  WolfChoiceRow,
   NassauSettings,
-  NassauLiveStatus,
-  NassauSettlement,
+  SkinsSettings,
+  MatchPlaySettings,
+  WolfSettings,
+  GameSettings,
+  GameLiveStatus,
+  GameSettlementResult,
   FullGameData,
   LifetimeStats,
   MonthlyDataPoint,
@@ -67,9 +91,10 @@ interface GameState {
 
   // Active game state (new)
   activeGameData: FullGameData | null;
-  nassauStatus: NassauLiveStatus | null;
+  gameStatus: GameLiveStatus | null;
   realtimeChannel: RealtimeChannel | null;
   pressingBetKeys: Set<string>; // Prevents double-tap race on press buttons
+  wolfChoices: WolfChoiceRow[]; // Wolf game partner choices
 
   // Dashboard actions (existing)
   fetchDashboardData: (userId: string) => Promise<void>;
@@ -83,8 +108,9 @@ interface GameState {
   // Game lifecycle actions (new)
   createGame: (
     creatorId: string,
+    gameType: GameType,
     courseName: string,
-    settings: NassauSettings,
+    settings: GameSettings,
     players: CreatePlayerInput[],
   ) => Promise<{ gameId?: string; error?: string }>;
   loadActiveGame: (gameId: string) => Promise<{ error?: string }>;
@@ -108,11 +134,19 @@ interface GameState {
     playerBId: string,
   ) => Promise<{ error?: string }>;
 
+  // Wolf choice
+  submitWolfChoice: (
+    holeNumber: number,
+    wolfPlayerId: string,
+    choiceType: 'solo' | 'partner',
+    partnerId: string | null,
+  ) => Promise<{ error?: string }>;
+
   // Late join
   addLatePlayer: (friendUserId: string, handicapUsed: number) => Promise<{ error?: string }>;
 
   // Settlements (new)
-  calculateAndCreateSettlements: () => Promise<{ settlements?: NassauSettlement[]; error?: string }>;
+  calculateAndCreateSettlements: () => Promise<{ settlements?: GameSettlementResult[]; error?: string }>;
   markPaid: (settlementId: string, method: SettlementMethod) => Promise<{ error?: string }>;
 
   // Lifetime stats
@@ -123,7 +157,7 @@ interface GameState {
   // Real-time (new)
   subscribeToActiveGame: () => void;
   unsubscribeFromActiveGame: () => void;
-  recalculateNassauStatus: () => void;
+  recalculateGameStatus: () => void;
 }
 
 // ─── Store Implementation ─────────────────────────────────────
@@ -141,9 +175,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Active game state
   activeGameData: null,
-  nassauStatus: null,
+  gameStatus: null,
   realtimeChannel: null,
   pressingBetKeys: new Set<string>(),
+  wolfChoices: [],
 
   // Lifetime stats
   lifetimeStats: null,
@@ -568,8 +603,25 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // ─── Game Lifecycle ─────────────────────────────────────────
 
-  createGame: async (creatorId, courseName, settings, players) => {
-    const result = await createNassauGame(creatorId, courseName, settings, players);
+  createGame: async (creatorId, gameType, courseName, settings, players) => {
+    let result: { gameId: string; error?: string };
+
+    switch (gameType) {
+      case 'skins':
+        result = await createSkinsGame(creatorId, courseName, settings as SkinsSettings, players);
+        break;
+      case 'match_play':
+        result = await createMatchPlayGame(creatorId, courseName, settings as MatchPlaySettings, players);
+        break;
+      case 'wolf':
+        result = await createWolfGame(creatorId, courseName, settings as WolfSettings, players);
+        break;
+      case 'nassau':
+      default:
+        result = await createNassauGame(creatorId, courseName, settings as NassauSettings, players);
+        break;
+    }
+
     if (result.error) return { error: result.error };
 
     // Load the newly created game
@@ -588,8 +640,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       return { error: result.error ?? 'Failed to load game' };
     }
 
-    set({ activeGameData: result.data, isLoading: false });
-    get().recalculateNassauStatus();
+    // Fetch wolf choices if this is a wolf game
+    let wolfChoicesData: WolfChoiceRow[] = [];
+    if (result.data.game.game_type === 'wolf') {
+      const wolfResult = await fetchWolfChoices(gameId);
+      wolfChoicesData = wolfResult.data;
+    }
+
+    set({ activeGameData: result.data, wolfChoices: wolfChoicesData, isLoading: false });
+    get().recalculateGameStatus();
 
     // Auto-subscribe to real-time if game is in progress
     if (result.data.game.status === 'in_progress') {
@@ -650,13 +709,39 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (result.error) return { error: result.error };
 
     get().unsubscribeFromActiveGame();
-    set({ activeGameData: null, nassauStatus: null });
+    set({ activeGameData: null, gameStatus: null, wolfChoices: [] });
     return {};
   },
 
   clearActiveGame: () => {
     get().unsubscribeFromActiveGame();
-    set({ activeGameData: null, nassauStatus: null });
+    set({ activeGameData: null, gameStatus: null, wolfChoices: [] });
+  },
+
+  // ─── Wolf Choice ──────────────────────────────────────────────
+
+  submitWolfChoice: async (holeNumber, wolfPlayerId, choiceType, partnerId) => {
+    const { activeGameData } = get();
+    if (!activeGameData) return { error: 'No active game' };
+
+    const result = await submitWolfChoiceService(
+      activeGameData.game.id,
+      holeNumber,
+      wolfPlayerId,
+      choiceType,
+      partnerId,
+    );
+
+    if (result.error) return { error: result.error };
+
+    // Optimistically add the choice
+    if (result.data) {
+      const updatedChoices = [...get().wolfChoices, result.data];
+      set({ wolfChoices: updatedChoices });
+      get().recalculateGameStatus();
+    }
+
+    return {};
   },
 
   // ─── Late Join ──────────────────────────────────────────────
@@ -753,7 +838,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       activeGameData: { ...activeGameData, scores: updatedScores },
     });
 
-    get().recalculateNassauStatus();
+    get().recalculateGameStatus();
     return {};
   },
 
@@ -817,15 +902,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (betType.includes('overall')) amount = settings.overall_bet;
 
     // --- Capture press context for Ace analytics ---
-    const nassauStatus = get().nassauStatus;
+    const gameStatus = get().gameStatus;
     let pressInitiatedHole: number | undefined;
     let marginAtPress: number | undefined;
 
-    if (nassauStatus) {
-      pressInitiatedHole = nassauStatus.currentHole;
+    if (gameStatus && gameStatus.type === 'nassau') {
+      pressInitiatedHole = gameStatus.currentHole;
 
       // Find the match and region to get the margin
-      const match = nassauStatus.matches.find(
+      const match = gameStatus.matches.find(
         (m) =>
           (m.playerAId === playerAId && m.playerBId === playerBId) ||
           (m.playerAId === playerBId && m.playerBId === playerAId),
@@ -882,7 +967,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           },
         });
 
-        get().recalculateNassauStatus();
+        get().recalculateGameStatus();
       }
     }
 
@@ -895,14 +980,51 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { activeGameData } = get();
     if (!activeGameData) return { error: 'No active game' };
 
-    const settings = activeGameData.game.settings as NassauSettings & { type: string };
+    const gameType = activeGameData.game.game_type;
+    let settlements: GameSettlementResult[];
 
-    const settlements = calculateNassauSettlements({
-      settings,
-      players: activeGameData.players,
-      bets: activeGameData.bets,
-      scores: activeGameData.scores,
-    });
+    switch (gameType) {
+      case 'skins': {
+        const skinsSettings = activeGameData.game.settings as SkinsSettings & { type: string };
+        settlements = calculateSkinsSettlements({
+          settings: skinsSettings,
+          players: activeGameData.players,
+          scores: activeGameData.scores,
+        });
+        break;
+      }
+      case 'match_play': {
+        const mpSettings = activeGameData.game.settings as MatchPlaySettings & { type: string };
+        settlements = calculateMatchPlaySettlements({
+          settings: mpSettings,
+          players: activeGameData.players,
+          bets: activeGameData.bets,
+          scores: activeGameData.scores,
+        });
+        break;
+      }
+      case 'wolf': {
+        const wolfSettings = activeGameData.game.settings as WolfSettings & { type: string };
+        settlements = calculateWolfSettlements({
+          settings: wolfSettings,
+          players: activeGameData.players,
+          scores: activeGameData.scores,
+          wolfChoices: get().wolfChoices,
+        });
+        break;
+      }
+      case 'nassau':
+      default: {
+        const nassauSettings = activeGameData.game.settings as NassauSettings & { type: string };
+        settlements = calculateNassauSettlements({
+          settings: nassauSettings,
+          players: activeGameData.players,
+          bets: activeGameData.bets,
+          scores: activeGameData.scores,
+        });
+        break;
+      }
+    }
 
     if (settlements.length === 0) return { settlements: [] };
 
@@ -964,7 +1086,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
 
         set({ activeGameData: { ...current, scores: updatedScores } });
-        get().recalculateNassauStatus();
+        get().recalculateGameStatus();
       },
 
       onBetChange: (bet) => {
@@ -980,7 +1102,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
 
         set({ activeGameData: { ...current, bets: updatedBets } });
-        get().recalculateNassauStatus();
+        get().recalculateGameStatus();
       },
 
       onSettlementChange: (settlement) => {
@@ -1005,6 +1127,19 @@ export const useGameStore = create<GameState>((set, get) => ({
           get().loadActiveGame(current.game.id);
         }
       },
+
+      onWolfChoiceChange: (wolfChoice) => {
+        const currentChoices = get().wolfChoices;
+        const idx = currentChoices.findIndex((c) => c.id === wolfChoice.id);
+        const updated = [...currentChoices];
+        if (idx >= 0) {
+          updated[idx] = wolfChoice;
+        } else {
+          updated.push(wolfChoice);
+        }
+        set({ wolfChoices: updated });
+        get().recalculateGameStatus();
+      },
     });
 
     set({ realtimeChannel: channel });
@@ -1018,22 +1153,61 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  // ─── Nassau Recalculation ───────────────────────────────────
+  // ─── Game Status Recalculation ──────────────────────────────
 
-  recalculateNassauStatus: () => {
+  recalculateGameStatus: () => {
     const { activeGameData } = get();
     if (!activeGameData) return;
-    if (activeGameData.game.game_type !== 'nassau') return;
 
-    const settings = activeGameData.game.settings as NassauSettings & { type: string };
+    const gameType = activeGameData.game.game_type;
 
-    const status = calculateNassauStatus({
-      settings,
-      players: activeGameData.players,
-      bets: activeGameData.bets,
-      scores: activeGameData.scores,
-    });
-
-    set({ nassauStatus: status });
+    switch (gameType) {
+      case 'nassau': {
+        const nassauSettings = activeGameData.game.settings as NassauSettings & { type: string };
+        const status = calculateNassauStatus({
+          settings: nassauSettings,
+          players: activeGameData.players,
+          bets: activeGameData.bets,
+          scores: activeGameData.scores,
+        });
+        set({ gameStatus: { type: 'nassau', ...status } });
+        break;
+      }
+      case 'skins': {
+        const skinsSettings = activeGameData.game.settings as SkinsSettings & { type: string };
+        const status = calculateSkinsStatus({
+          settings: skinsSettings,
+          players: activeGameData.players,
+          scores: activeGameData.scores,
+        });
+        set({ gameStatus: { type: 'skins', ...status } });
+        break;
+      }
+      case 'match_play': {
+        const mpSettings = activeGameData.game.settings as MatchPlaySettings & { type: string };
+        const status = calculateMatchPlayStatus({
+          settings: mpSettings,
+          players: activeGameData.players,
+          bets: activeGameData.bets,
+          scores: activeGameData.scores,
+        });
+        set({ gameStatus: { type: 'match_play', ...status } });
+        break;
+      }
+      case 'wolf': {
+        const wolfSettings = activeGameData.game.settings as WolfSettings & { type: string };
+        const status = calculateWolfStatus({
+          settings: wolfSettings,
+          players: activeGameData.players,
+          scores: activeGameData.scores,
+          wolfChoices: get().wolfChoices,
+        });
+        set({ gameStatus: { type: 'wolf', ...status } });
+        break;
+      }
+      default:
+        set({ gameStatus: null });
+        break;
+    }
   },
 }));

@@ -6,6 +6,9 @@ import type {
   ScoreRow,
   SettlementRow,
   NassauSettings,
+  SkinsSettings,
+  MatchPlaySettings,
+  WolfSettings,
   FullGameData,
 } from '../types';
 
@@ -149,6 +152,335 @@ export async function createNassauGame(
   await supabase
     .from('games')
     .update({ total_pot: totalPot } as any)
+    .eq('id', gameId);
+
+  return { gameId };
+}
+
+// ─── Create Skins Game ───────────────────────────────────────
+
+export async function createSkinsGame(
+  creatorId: string,
+  courseName: string,
+  settings: SkinsSettings,
+  players: CreatePlayerInput[],
+): Promise<{ gameId: string; error?: string }> {
+  // 1. Insert the game
+  const { data: game, error: gameError } = await supabase
+    .from('games')
+    .insert({
+      created_by: creatorId,
+      game_type: 'skins',
+      status: 'created',
+      total_pot: 0,
+      settings: { type: 'skins', ...settings } as any,
+      course_name: courseName,
+      started_at: null,
+      completed_at: null,
+    })
+    .select()
+    .single();
+
+  if (gameError || !game) {
+    return { gameId: '', error: gameError?.message ?? 'Failed to create game' };
+  }
+
+  const gameId = (game as any).id as string;
+
+  // 2. Insert game_players
+  const playerInserts = players.map((p) => ({
+    game_id: gameId,
+    user_id: p.user_id ?? null,
+    guest_name: p.guest_name ?? null,
+    guest_handicap: p.guest_handicap ?? null,
+    handicap_used: p.handicap_used ?? p.guest_handicap ?? null,
+    position: p.position,
+    paid_status: 'unpaid' as const,
+  }));
+
+  const { error: playersError } = await supabase
+    .from('game_players')
+    .insert(playerInserts as any);
+
+  if (playersError) {
+    await supabase.from('games').delete().eq('id', gameId);
+    return { gameId: '', error: playersError?.message ?? 'Failed to add players' };
+  }
+
+  // Fetch inserted players
+  const { data: insertedPlayers, error: fetchPlayersError } = await supabase
+    .from('game_players')
+    .select()
+    .eq('game_id', gameId)
+    .order('position');
+
+  if (fetchPlayersError || !insertedPlayers) {
+    await supabase.from('games').delete().eq('id', gameId);
+    return { gameId: '', error: fetchPlayersError?.message ?? 'Failed to fetch players' };
+  }
+
+  const typedPlayers = insertedPlayers as unknown as GamePlayerRow[];
+
+  // 3. Create one skins_pool bet per player (tracks participation, not pairwise)
+  const betInserts = typedPlayers.map((p) => ({
+    game_id: gameId,
+    bet_type: 'skins_pool',
+    amount: settings.skin_value,
+    winner_id: null,
+    settled: false,
+    parent_bet_id: null,
+    player_a_id: p.id,
+    player_b_id: null,
+  }));
+
+  if (betInserts.length > 0) {
+    const { error: betsError } = await supabase
+      .from('game_bets')
+      .insert(betInserts as any);
+
+    if (betsError) {
+      return { gameId, error: `Game created but bets failed: ${betsError.message}` };
+    }
+  }
+
+  // 4. Calculate total pot: skin_value × num_holes
+  const numHoles = settings.num_holes ?? 18;
+  const totalPot = settings.skin_value * numHoles;
+
+  await supabase
+    .from('games')
+    .update({ total_pot: totalPot } as any)
+    .eq('id', gameId);
+
+  return { gameId };
+}
+
+// ─── Create Match Play Game ──────────────────────────────────
+
+export async function createMatchPlayGame(
+  creatorId: string,
+  courseName: string,
+  settings: MatchPlaySettings,
+  players: CreatePlayerInput[],
+): Promise<{ gameId: string; error?: string }> {
+  // 1. Insert the game
+  const { data: game, error: gameError } = await supabase
+    .from('games')
+    .insert({
+      created_by: creatorId,
+      game_type: 'match_play',
+      status: 'created',
+      total_pot: 0,
+      settings: { type: 'match_play', ...settings } as any,
+      course_name: courseName,
+      started_at: null,
+      completed_at: null,
+    })
+    .select()
+    .single();
+
+  if (gameError || !game) {
+    return { gameId: '', error: gameError?.message ?? 'Failed to create game' };
+  }
+
+  const gameId = (game as any).id as string;
+
+  // 2. Insert game_players
+  const playerInserts = players.map((p) => ({
+    game_id: gameId,
+    user_id: p.user_id ?? null,
+    guest_name: p.guest_name ?? null,
+    guest_handicap: p.guest_handicap ?? null,
+    handicap_used: p.handicap_used ?? p.guest_handicap ?? null,
+    position: p.position,
+    paid_status: 'unpaid' as const,
+  }));
+
+  const { error: playersError } = await supabase
+    .from('game_players')
+    .insert(playerInserts as any);
+
+  if (playersError) {
+    await supabase.from('games').delete().eq('id', gameId);
+    return { gameId: '', error: playersError?.message ?? 'Failed to add players' };
+  }
+
+  // Fetch inserted players
+  const { data: insertedPlayers, error: fetchPlayersError } = await supabase
+    .from('game_players')
+    .select()
+    .eq('game_id', gameId)
+    .order('position');
+
+  if (fetchPlayersError || !insertedPlayers) {
+    await supabase.from('games').delete().eq('id', gameId);
+    return { gameId: '', error: fetchPlayersError?.message ?? 'Failed to fetch players' };
+  }
+
+  const typedPlayers = insertedPlayers as unknown as GamePlayerRow[];
+
+  // 3. Create bets
+  const betInserts: any[] = [];
+
+  if (settings.match_type === 'teams') {
+    // Teams: one bet for the team match
+    // Use first player of each team as player_a / player_b
+    const teamAFirst = typedPlayers[0];
+    const teamBFirst = typedPlayers.length >= 3 ? typedPlayers[2] : typedPlayers[1];
+
+    betInserts.push({
+      game_id: gameId,
+      bet_type: 'match_play',
+      amount: settings.total_bet,
+      winner_id: null,
+      settled: false,
+      parent_bet_id: null,
+      player_a_id: teamAFirst.id,
+      player_b_id: teamBFirst.id,
+    });
+  } else {
+    // Singles: one bet per player pair (round-robin)
+    for (let i = 0; i < typedPlayers.length; i++) {
+      for (let j = i + 1; j < typedPlayers.length; j++) {
+        betInserts.push({
+          game_id: gameId,
+          bet_type: 'match_play',
+          amount: settings.total_bet,
+          winner_id: null,
+          settled: false,
+          parent_bet_id: null,
+          player_a_id: typedPlayers[i].id,
+          player_b_id: typedPlayers[j].id,
+        });
+      }
+    }
+  }
+
+  if (betInserts.length > 0) {
+    const { error: betsError } = await supabase
+      .from('game_bets')
+      .insert(betInserts);
+
+    if (betsError) {
+      return { gameId, error: `Game created but bets failed: ${betsError.message}` };
+    }
+  }
+
+  // 4. Calculate total pot
+  const numMatches = betInserts.length;
+  const totalPot = numMatches * settings.total_bet;
+
+  await supabase
+    .from('games')
+    .update({ total_pot: totalPot } as any)
+    .eq('id', gameId);
+
+  // 5. Store team assignments in settings (with resolved player IDs)
+  if (settings.match_type === 'teams' && typedPlayers.length === 4) {
+    const updatedSettings = {
+      type: 'match_play',
+      ...settings,
+      team_a: [typedPlayers[0].id, typedPlayers[1].id],
+      team_b: [typedPlayers[2].id, typedPlayers[3].id],
+    };
+
+    await supabase
+      .from('games')
+      .update({ settings: updatedSettings } as any)
+      .eq('id', gameId);
+  }
+
+  return { gameId };
+}
+
+// ─── Create Wolf Game ──────────────────────────────────────────
+
+export async function createWolfGame(
+  creatorId: string,
+  courseName: string,
+  settings: WolfSettings,
+  players: CreatePlayerInput[],
+): Promise<{ gameId: string; error?: string }> {
+  // Wolf requires exactly 4 players
+  if (players.length !== 4) {
+    return { gameId: '', error: 'Wolf requires exactly 4 players' };
+  }
+
+  // 1. Insert the game
+  const { data: game, error: gameError } = await supabase
+    .from('games')
+    .insert({
+      created_by: creatorId,
+      game_type: 'wolf',
+      status: 'created',
+      total_pot: 0,
+      settings: { type: 'wolf', ...settings } as any,
+      course_name: courseName,
+      started_at: null,
+      completed_at: null,
+    })
+    .select()
+    .single();
+
+  if (gameError || !game) {
+    return { gameId: '', error: gameError?.message ?? 'Failed to create game' };
+  }
+
+  const gameId = (game as any).id as string;
+
+  // 2. Insert game_players
+  const playerInserts = players.map((p) => ({
+    game_id: gameId,
+    user_id: p.user_id ?? null,
+    guest_name: p.guest_name ?? null,
+    guest_handicap: p.guest_handicap ?? null,
+    handicap_used: p.handicap_used ?? p.guest_handicap ?? null,
+    position: p.position,
+    paid_status: 'unpaid' as const,
+  }));
+
+  const { error: playersError } = await supabase
+    .from('game_players')
+    .insert(playerInserts as any);
+
+  if (playersError) {
+    await supabase.from('games').delete().eq('id', gameId);
+    return { gameId: '', error: playersError?.message ?? 'Failed to add players' };
+  }
+
+  // Fetch inserted players
+  const { data: insertedPlayers, error: fetchPlayersError } = await supabase
+    .from('game_players')
+    .select()
+    .eq('game_id', gameId)
+    .order('position');
+
+  if (fetchPlayersError || !insertedPlayers) {
+    await supabase.from('games').delete().eq('id', gameId);
+    return { gameId: '', error: fetchPlayersError?.message ?? 'Failed to fetch players' };
+  }
+
+  const typedPlayers = insertedPlayers as unknown as GamePlayerRow[];
+
+  // 3. Wolf is points-based — no initial bets needed
+  // (Points are tracked via wolf_choices + scores, settlements are pairwise)
+
+  // 4. Store wolf_order with resolved player IDs
+  const wolfOrder = typedPlayers.map((p) => p.id);
+  const updatedSettings = {
+    type: 'wolf',
+    ...settings,
+    wolf_order: wolfOrder,
+  };
+
+  // Estimate total pot: point_value × estimated max points per player × pairs
+  // This is approximate — actual depends on game outcome
+  const numHoles = settings.num_holes ?? 18;
+  const estimatedTotalPot = settings.point_value * numHoles * 2;
+
+  await supabase
+    .from('games')
+    .update({ settings: updatedSettings, total_pot: estimatedTotalPot } as any)
     .eq('id', gameId);
 
   return { gameId };

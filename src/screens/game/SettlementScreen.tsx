@@ -16,8 +16,11 @@ import { formatPlayerName, formatMoney } from '../../utils/format';
 import { useAcePaywall } from '../../hooks/useAcePaywall';
 import { AcePremiumGate } from '../../components/AcePremiumGate';
 import { getPlayerNetAmount, calculateNassauSettlements } from '../../engine/nassauCalculator';
+import { calculateSkinsSettlements } from '../../engine/skinsCalculator';
+import { calculateMatchPlaySettlements } from '../../engine/matchPlayCalculator';
+import { calculateWolfSettlements } from '../../engine/wolfCalculator';
 import type { HomeStackScreenProps } from '../../navigation/types';
-import type { NassauSettings, SettlementMethod, PressReplay } from '../../types';
+import type { NassauSettings, SkinsSettings, MatchPlaySettings, WolfSettings, SettlementMethod, PressReplay, SkinsSettlement } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -30,6 +33,7 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
     isLoading,
     loadActiveGame,
     markPaid,
+    wolfChoices,
   } = useGameStore();
   const showToast = useUIStore((s) => s.showToast);
   const { isPremium, openPaywall } = useAcePaywall();
@@ -59,17 +63,44 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
   const game = activeGameData?.game;
   const players = activeGameData?.players ?? [];
   const dbSettlements = activeGameData?.settlements ?? [];
-  const settings = game?.settings as (NassauSettings & { type: string }) | undefined;
+  const rawSettings = game?.settings as (Record<string, any>) | undefined;
+  const gameType = rawSettings?.type ?? 'nassau';
+  const nassauSettings = gameType === 'nassau' ? rawSettings as (NassauSettings & { type: string }) : undefined;
+  const skinsSettingsVal = gameType === 'skins' ? rawSettings as (SkinsSettings & { type: string }) : undefined;
+  const numHolesFromSettings = (rawSettings?.num_holes ?? 18) as number;
 
   const calculatedSettlements = useMemo(() => {
-    if (!activeGameData || !settings) return [];
+    if (!activeGameData || !rawSettings) return [];
+    if (gameType === 'skins') {
+      return calculateSkinsSettlements({
+        settings: rawSettings as SkinsSettings,
+        players: activeGameData.players,
+        scores: activeGameData.scores,
+      });
+    }
+    if (gameType === 'match_play') {
+      return calculateMatchPlaySettlements({
+        settings: rawSettings as MatchPlaySettings,
+        players: activeGameData.players,
+        bets: activeGameData.bets,
+        scores: activeGameData.scores,
+      });
+    }
+    if (gameType === 'wolf') {
+      return calculateWolfSettlements({
+        settings: rawSettings as WolfSettings,
+        players: activeGameData.players,
+        scores: activeGameData.scores,
+        wolfChoices,
+      });
+    }
     return calculateNassauSettlements({
-      settings,
+      settings: rawSettings as NassauSettings,
       players: activeGameData.players,
       bets: activeGameData.bets,
       scores: activeGameData.scores,
     });
-  }, [activeGameData, settings]);
+  }, [activeGameData, rawSettings, gameType, wolfChoices]);
 
   const myPlayer = players.find((p) => p.user_id === user?.id);
   const myNet = myPlayer
@@ -122,7 +153,7 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
     );
   }
 
-  const numHoles = (settings?.num_holes ?? 18);
+  const numHoles = numHolesFromSettings;
   const scores = activeGameData?.scores ?? [];
   const holesCompleted = scores.length > 0
     ? Math.max(...scores.map((s) => s.hole_number))
@@ -257,7 +288,8 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
             </Text>
           )}
 
-          {/* Ace Post-Round Analysis */}
+          {/* Ace Post-Round Analysis — Nassau only (press-related) */}
+          {gameType === 'nassau' && (
           <Animated.View entering={FadeInDown.duration(400).delay(600)}>
             <AcePremiumGate
               onUpgrade={openPaywall}
@@ -307,8 +339,10 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
               )}
             </AcePremiumGate>
           </Animated.View>
+          )}
 
-          {/* Ace Press Replay */}
+          {/* Ace Press Replay — Nassau only */}
+          {gameType === 'nassau' && (
           <Animated.View entering={FadeInDown.duration(400).delay(700)}>
             <AcePremiumGate
               onUpgrade={openPaywall}
@@ -404,6 +438,7 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
               )}
             </AcePremiumGate>
           </Animated.View>
+          )}
         </ScrollView>
 
       {/* Win confetti */}

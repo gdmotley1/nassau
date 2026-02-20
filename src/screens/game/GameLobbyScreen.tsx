@@ -12,7 +12,7 @@ import { useAcePaywall } from '../../hooks/useAcePaywall';
 import { AcePremiumGate } from '../../components/AcePremiumGate';
 import { getHeadToHeadRecord, getCourseScouting } from '../../services/aceService';
 import type { HomeStackScreenProps } from '../../navigation/types';
-import type { NassauSettings, HeadToHeadRecord, CourseScouting } from '../../types';
+import type { NassauSettings, SkinsSettings, MatchPlaySettings, WolfSettings, HeadToHeadRecord, CourseScouting } from '../../types';
 
 export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'GameLobby'>) {
   const { gameId } = route.params;
@@ -58,7 +58,12 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
 
   const game = activeGameData?.game;
   const players = activeGameData?.players ?? [];
-  const settings = game?.settings as (NassauSettings & { type: string }) | undefined;
+  const rawSettings = game?.settings as (Record<string, any>) | undefined;
+  const gameType = rawSettings?.type ?? 'nassau';
+  const nassauSettings = gameType === 'nassau' ? rawSettings as (NassauSettings & { type: string }) : undefined;
+  const skinsSettings = gameType === 'skins' ? rawSettings as (SkinsSettings & { type: string }) : undefined;
+  const matchPlaySettings = gameType === 'match_play' ? rawSettings as (MatchPlaySettings & { type: string }) : undefined;
+  const wolfSettings = gameType === 'wolf' ? rawSettings as (WolfSettings & { type: string }) : undefined;
   const isCreator = game?.created_by === user?.id;
 
   const handleStart = async () => {
@@ -127,16 +132,42 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
               </Text>
             </View>
 
-            {settings && (
+            {nassauSettings && (
               <View style={styles.betsRow}>
-                <BetChip label="Front" amount={settings.front_bet} theme={theme} />
-                <BetChip label="Back" amount={settings.back_bet} theme={theme} />
-                <BetChip label="Overall" amount={settings.overall_bet} theme={theme} />
+                <BetChip label="Front" amount={nassauSettings.front_bet} theme={theme} />
+                <BetChip label="Back" amount={nassauSettings.back_bet} theme={theme} />
+                <BetChip label="Overall" amount={nassauSettings.overall_bet} theme={theme} />
+              </View>
+            )}
+            {skinsSettings && (
+              <View style={styles.betsRow}>
+                <BetChip label="Per Skin" amount={skinsSettings.skin_value} theme={theme} />
+                <BetChip label="Holes" amount={skinsSettings.num_holes} theme={theme} />
+              </View>
+            )}
+            {matchPlaySettings && (
+              <View style={styles.betsRow}>
+                <BetChip label="Match Bet" amount={matchPlaySettings.total_bet} theme={theme} />
+                <BetChip label="Holes" amount={matchPlaySettings.num_holes} theme={theme} />
+              </View>
+            )}
+            {wolfSettings && (
+              <View style={styles.betsRow}>
+                <BetChip label="Per Point" amount={wolfSettings.point_value} theme={theme} />
+                <BetChip label="Holes" amount={wolfSettings.num_holes} theme={theme} />
               </View>
             )}
 
             <Text style={[styles.matchesNote, { color: theme.semantic.textSecondary }]}>
-              {numPairs} {numPairs === 1 ? 'match' : 'matches'} (round-robin)
+              {gameType === 'skins'
+                ? `${players.length} player${players.length !== 1 ? 's' : ''} · ${rawSettings?.num_holes ?? 18} holes`
+                : gameType === 'wolf'
+                  ? `4-player rotating wolf · ${rawSettings?.num_holes ?? 18} holes`
+                  : gameType === 'match_play'
+                    ? matchPlaySettings?.match_type === 'teams'
+                      ? '2v2 Best Ball · Team Match'
+                      : `${numPairs} ${numPairs === 1 ? 'match' : 'matches'} (round-robin)`
+                    : `${numPairs} ${numPairs === 1 ? 'match' : 'matches'} (round-robin)`}
             </Text>
           </RHCard>
         </Animated.View>
@@ -179,7 +210,7 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
           ))}
         </Animated.View>
 
-        {settings && (
+        {rawSettings && (
           <Animated.View entering={FadeInDown.duration(400).delay(300)}>
             <Text style={[styles.sectionLabel, { color: theme.semantic.textSecondary }]}>
               RULES
@@ -190,23 +221,85 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
                   Handicap
                 </Text>
                 <Text style={[styles.ruleValue, { color: theme.semantic.textPrimary }]}>
-                  {settings.handicap_mode === 'none'
+                  {rawSettings.handicap_mode === 'none'
                     ? 'Scratch'
-                    : settings.handicap_mode === 'full'
+                    : rawSettings.handicap_mode === 'full'
                     ? 'Full (100%)'
                     : 'Partial (80%)'}
                 </Text>
               </View>
-              <View style={styles.ruleItem}>
-                <Text style={[styles.ruleLabel, { color: theme.semantic.textSecondary }]}>
-                  Auto-Press
-                </Text>
-                <Text style={[styles.ruleValue, { color: theme.semantic.textPrimary }]}>
-                  {settings.auto_press
-                    ? `On${settings.press_limit > 0 ? ` (max ${settings.press_limit})` : ''}`
-                    : 'Off'}
-                </Text>
-              </View>
+              {nassauSettings && (
+                <View style={styles.ruleItem}>
+                  <Text style={[styles.ruleLabel, { color: theme.semantic.textSecondary }]}>
+                    Auto-Press
+                  </Text>
+                  <Text style={[styles.ruleValue, { color: theme.semantic.textPrimary }]}>
+                    {nassauSettings.auto_press
+                      ? `On${nassauSettings.press_limit > 0 ? ` (max ${nassauSettings.press_limit})` : ''}`
+                      : 'Off'}
+                  </Text>
+                </View>
+              )}
+              {skinsSettings && (
+                <>
+                  <View style={styles.ruleItem}>
+                    <Text style={[styles.ruleLabel, { color: theme.semantic.textSecondary }]}>
+                      Carryover
+                    </Text>
+                    <Text style={[styles.ruleValue, { color: theme.semantic.textPrimary }]}>
+                      {skinsSettings.allow_carryovers ? 'On' : 'Off'}
+                    </Text>
+                  </View>
+                  <View style={styles.ruleItem}>
+                    <Text style={[styles.ruleLabel, { color: theme.semantic.textSecondary }]}>
+                      Split Final Ties
+                    </Text>
+                    <Text style={[styles.ruleValue, { color: theme.semantic.textPrimary }]}>
+                      {skinsSettings.split_final_ties ? 'On' : 'Off'}
+                    </Text>
+                  </View>
+                </>
+              )}
+              {matchPlaySettings && (
+                <>
+                  <View style={styles.ruleItem}>
+                    <Text style={[styles.ruleLabel, { color: theme.semantic.textSecondary }]}>
+                      Format
+                    </Text>
+                    <Text style={[styles.ruleValue, { color: theme.semantic.textPrimary }]}>
+                      {matchPlaySettings.match_type === 'teams' ? 'Teams (2v2 Best Ball)' : 'Singles (Round-Robin)'}
+                    </Text>
+                  </View>
+                  <View style={styles.ruleItem}>
+                    <Text style={[styles.ruleLabel, { color: theme.semantic.textSecondary }]}>
+                      Close-Out
+                    </Text>
+                    <Text style={[styles.ruleValue, { color: theme.semantic.textPrimary }]}>
+                      When lead exceeds holes remaining
+                    </Text>
+                  </View>
+                </>
+              )}
+              {wolfSettings && (
+                <>
+                  <View style={styles.ruleItem}>
+                    <Text style={[styles.ruleLabel, { color: theme.semantic.textSecondary }]}>
+                      Blind Wolf
+                    </Text>
+                    <Text style={[styles.ruleValue, { color: theme.semantic.textPrimary }]}>
+                      {wolfSettings.blind_wolf ? 'On (3x points)' : 'Off'}
+                    </Text>
+                  </View>
+                  <View style={styles.ruleItem}>
+                    <Text style={[styles.ruleLabel, { color: theme.semantic.textSecondary }]}>
+                      Points
+                    </Text>
+                    <Text style={[styles.ruleValue, { color: theme.semantic.textPrimary }]}>
+                      Partner 1x / Solo 2x / Blind 3x
+                    </Text>
+                  </View>
+                </>
+              )}
             </RHCard>
           </Animated.View>
         )}
