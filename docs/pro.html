@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nassau Pro - AI-Powered Golf Betting Analytics | Win More Money</title>
-  <meta name="description" content="Stop guessing when to press. Nassau Pro uses your real game data to tell you when to bet, who to target, and where you're leaving money on the course.">
-  <meta name="keywords" content="golf betting analytics, golf press advisor, golf matchup data, nassau pro, golf AI, golf betting edge, golf win rate">
+  <title>Nassau Pro - Scout. Press. Flex. | Golf Betting Edge</title>
+  <meta name="description" content="Pre-round course scouting, real-time press advice, shareable stats cards, and group leaderboards. Nassau Pro is the edge your group doesn't know you have.">
+  <meta name="keywords" content="golf betting analytics, golf press advisor, golf matchup data, nassau pro, golf AI, golf betting edge, golf win rate, golf leaderboard, golf stats">
   <link rel="canonical" href="https://nassauapp.com/pro.html">
-  <meta property="og:title" content="Nassau Pro - Your Golf Betting Edge">
-  <meta property="og:description" content="AI-powered press advice, matchup intel, and post-round analysis built from your real game data.">
+  <meta property="og:title" content="Nassau Pro - Scout. Press. Flex.">
+  <meta property="og:description" content="Pre-round scouting, live press advice, and shareable stats cards. The edge your group doesn't know you have.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nassauapp.com/pro.html">
   <meta property="og:site_name" content="Nassau">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Nassau Pro - Your Golf Betting Edge">
-  <meta name="twitter:description" content="AI-powered press advice, matchup intel, and post-round analysis.">
+  <meta name="twitter:title" content="Nassau Pro - Scout. Press. Flex.">
+  <meta name="twitter:description" content="Pre-round scouting, live press advice, and shareable stats cards.">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
   <script type="application/ld+json">
@@ -24,7 +24,7 @@
     "name": "Nassau Pro",
     "operatingSystem": "iOS",
     "applicationCategory": "SportsApplication",
-    "description": "AI-powered golf betting analytics with press advice, matchup intel, and post-round analysis.",
+    "description": "Golf betting intelligence with course scouting, press advice, opponent rankings, group leaderboards, and shareable stats cards.",
     "url": "https://nassauapp.com/pro.html",
     "offers": [
       { "@type": "Offer", "price": "4.99", "priceCurrency": "USD", "description": "Monthly subscription" },
@@ -47,8 +47,8 @@
       --elevated: #2C2C2E;
       --border: #38383A;
       --text: #FFFFFF;
-      --text-secondary: #8E8E93;
-      --text-tertiary: #48484A;
+      --text-secondary: #A1A1A6;
+      --text-tertiary: #6E6E73;
     }
 
     html { scroll-behavior: smooth; }
@@ -63,47 +63,101 @@
     a:hover { opacity: 0.85; }
     .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
-    /* ─── Nav ───────────────────────────────────────── */
+    /* ─── Accessibility ──────────────────────────────── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+
+    .skip-nav {
+      position: absolute; top: -100px; left: 16px;
+      background: var(--teal); color: #000;
+      padding: 12px 24px; border-radius: 8px;
+      font-weight: 600; font-size: 14px;
+      z-index: 200; transition: top 0.2s;
+    }
+
+    .skip-nav:focus {
+      top: 12px;
+      outline: 2px solid var(--text);
+      outline-offset: 2px;
+    }
+
+    /* ─── Nav (Tesla-style) ────────────────────────── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(56, 56, 58, 0.5);
+      background: transparent;
+      transition: background 0.3s, backdrop-filter 0.3s;
     }
-    nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
-    .nav-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
+
+    nav.scrolled {
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    nav .container {
+      position: relative;
+      display: flex; justify-content: space-between; align-items: center;
+      height: 56px; max-width: 100%; padding: 0 40px;
+    }
+
+    .nav-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); flex-shrink: 0; }
     .nav-logo span { color: var(--teal); }
-    .nav-links { display: flex; gap: 32px; list-style: none; }
-    .nav-links a { color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: color 0.2s; }
-    .nav-links a:hover { color: var(--text); opacity: 1; }
-    .nav-links a.active { color: var(--teal); }
-    .nav-cta {
-      padding: 8px 20px; background: var(--teal); color: #000 !important;
-      border-radius: 8px; font-weight: 600 !important; font-size: 14px !important;
-      transition: transform 0.2s, opacity 0.2s;
+
+    .nav-links {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 4px; list-style: none;
     }
-    .nav-cta:hover { transform: scale(0.97); opacity: 0.9 !important; }
+
+    .nav-links a {
+      color: var(--text); font-size: 14px; font-weight: 500;
+      padding: 7px 16px; border-radius: 6px;
+      transition: background 0.25s, color 0.25s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-links a:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text); opacity: 1; transform: scale(0.97);
+    }
+    .nav-links a.active { color: var(--teal); }
+
+    .nav-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+
+    .nav-cta {
+      padding: 7px 18px; background: rgba(255, 255, 255, 0.1);
+      color: var(--text) !important; border-radius: 6px;
+      font-weight: 500 !important; font-size: 14px !important;
+      transition: background 0.2s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: none;
+    }
+    .nav-cta:hover { background: rgba(255, 255, 255, 0.15); opacity: 1 !important; transform: scale(0.97); }
+
     .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
     .hamburger svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 2; }
+
     .mobile-menu {
-      display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(20px);
+      display: none; position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.97); backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px); z-index: 99;
-      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+      flex-direction: column; align-items: center; justify-content: center; gap: 28px;
     }
     .mobile-menu.open { display: flex; }
-    .mobile-menu a { color: var(--text-secondary); font-size: 20px; font-weight: 600; transition: color 0.2s; }
-    .mobile-menu a:hover { color: var(--text); opacity: 1; }
+    .mobile-menu a {
+      color: var(--text); font-size: 18px; font-weight: 500; transition: opacity 0.2s;
+      padding: 8px 24px; border-radius: 8px;
+    }
+    .mobile-menu a:hover { opacity: 0.7; }
     .mobile-menu a.active { color: var(--teal); }
-    .mobile-menu .nav-cta { padding: 14px 36px; font-size: 17px !important; border-radius: 12px; }
-
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .hamburger { display: block; }
+    .mobile-menu .nav-cta {
+      padding: 14px 36px; font-size: 17px !important; border-radius: 12px;
+      background: var(--teal); color: #000 !important;
     }
 
     /* ─── Hero ──────────────────────────────────────── */
     .pro-hero {
+      min-height: 70vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       padding: 140px 24px 80px; text-align: center;
       position: relative; overflow: hidden;
     }
@@ -115,6 +169,31 @@
       pointer-events: none;
     }
 
+    .hero-orb {
+      position: absolute; border-radius: 50%; pointer-events: none; filter: blur(80px);
+    }
+    .hero-orb-1 {
+      width: 300px; height: 300px; background: rgba(0, 212, 170, 0.1);
+      top: 20%; left: -5%; animation: floatOrb1 22s ease-in-out infinite;
+    }
+    .hero-orb-2 {
+      width: 200px; height: 200px; background: rgba(0, 200, 5, 0.06);
+      bottom: 15%; right: -3%; animation: floatOrb2 28s ease-in-out infinite;
+    }
+
+    @keyframes floatOrb1 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(50px, -30px) scale(1.05); }
+      50% { transform: translate(20px, 20px) scale(0.95); }
+      75% { transform: translate(-30px, -10px) scale(1.02); }
+    }
+    @keyframes floatOrb2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(-40px, 25px) scale(1.03); }
+      50% { transform: translate(15px, -35px) scale(0.97); }
+      75% { transform: translate(-20px, -15px) scale(1.05); }
+    }
+
     .pro-badge {
       display: inline-block; padding: 8px 24px; border-radius: 10px;
       background: var(--teal-dim); color: var(--teal);
@@ -123,19 +202,54 @@
     }
 
     .pro-hero h1 {
-      font-size: clamp(36px, 7vw, 56px); font-weight: 800;
+      font-size: clamp(36px, 7vw, 60px); font-weight: 800;
       letter-spacing: -2px; line-height: 1.05; margin-bottom: 20px;
       position: relative;
     }
     .pro-hero h1 .accent { color: var(--teal); }
 
     .pro-hero > p {
-      font-size: 19px; color: var(--text-secondary); max-width: 500px;
+      font-size: 19px; color: var(--text-secondary); max-width: 540px;
       margin: 0 auto; line-height: 1.6; position: relative;
     }
 
+    /* ─── Pillar Headers ──────────────────────────────── */
+    .pillar-header {
+      text-align: center;
+      margin: 0 0 48px;
+      padding-top: 80px;
+      position: relative;
+    }
+
+    .pillar-header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 200px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 170, 0.3), transparent);
+    }
+
+    .pillar-tag {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 20px;
+      background: var(--teal-dim);
+      color: var(--teal);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .pillar-title {
+      font-size: clamp(24px, 4vw, 32px);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
     /* ─── Feature Deep Dives ───────────────────────── */
-    .pro-features { padding: 60px 0 100px; }
+    .pro-features { padding: 60px 0 40px; }
 
     .pro-feature-row {
       display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
@@ -147,9 +261,19 @@
     .pro-feature-row.reverse > * { direction: ltr; }
 
     .pro-feature-visual {
-      background: var(--card); border: 1px solid var(--border);
+      background: rgba(28, 28, 30, 0.65);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
       border-radius: 20px; padding: 40px; text-align: center;
       position: relative; overflow: hidden;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.4s, box-shadow 0.4s;
+    }
+
+    .pro-feature-visual:hover {
+      transform: translateY(-4px);
+      border-color: rgba(0, 212, 170, 0.3);
+      box-shadow: 0 0 30px rgba(0, 212, 170, 0.06), 0 8px 24px rgba(0, 0, 0, 0.4);
     }
 
     .pro-feature-visual::before {
@@ -160,9 +284,7 @@
       pointer-events: none;
     }
 
-    .visual-icon {
-      margin-bottom: 16px; position: relative;
-    }
+    .visual-icon { margin-bottom: 16px; position: relative; }
     .visual-icon svg {
       width: 56px; height: 56px; stroke: var(--teal); fill: none;
       stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
@@ -178,7 +300,6 @@
       text-transform: uppercase; letter-spacing: 0.5px; position: relative;
     }
 
-    .pro-feature-text {}
     .pro-feature-text .feature-tag {
       display: inline-block; padding: 4px 12px; border-radius: 6px;
       background: var(--teal-dim); color: var(--teal);
@@ -209,21 +330,34 @@
     /* ─── Comparison Table ──────────────────────────── */
     .comparison {
       padding: 80px 0; border-top: 1px solid var(--border);
+      position: relative;
     }
 
-    .comparison .section-label {
+    .comparison::before {
+      content: ''; position: absolute; top: -1px; left: 50%;
+      transform: translateX(-50%); width: 200px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 170, 0.4), transparent);
+    }
+
+    .section-label {
       text-align: center; font-size: 12px; font-weight: 700;
       letter-spacing: 2.5px; color: var(--teal); text-transform: uppercase;
       margin-bottom: 16px;
     }
-    .comparison .section-title {
+    .section-title {
       text-align: center; font-size: clamp(28px, 5vw, 36px);
       font-weight: 800; letter-spacing: -1px; margin-bottom: 48px;
+    }
+    .section-subtitle {
+      text-align: center; font-size: 17px; color: var(--text-secondary);
+      max-width: 480px; margin: 0 auto 48px; line-height: 1.6;
     }
 
     .comparison-table {
       max-width: 680px; margin: 0 auto;
-      background: var(--card); border: 1px solid var(--border);
+      background: rgba(28, 28, 30, 0.65);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
       border-radius: 16px; overflow: hidden;
     }
 
@@ -261,36 +395,29 @@
       padding: 80px 0; border-top: 1px solid var(--border);
     }
 
-    .pricing .section-label {
-      text-align: center; font-size: 12px; font-weight: 700;
-      letter-spacing: 2.5px; color: var(--teal); text-transform: uppercase;
-      margin-bottom: 16px;
-    }
-    .pricing .section-title {
-      text-align: center; font-size: clamp(28px, 5vw, 36px);
-      font-weight: 800; letter-spacing: -1px; margin-bottom: 12px;
-    }
-    .pricing .section-subtitle {
-      text-align: center; font-size: 17px; color: var(--text-secondary);
-      max-width: 480px; margin: 0 auto 48px; line-height: 1.6;
-    }
-
     .pricing-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 20px; max-width: 880px; margin: 0 auto;
     }
 
     .price-card {
-      background: var(--card); border: 1px solid var(--border);
+      background: rgba(28, 28, 30, 0.65);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
       border-radius: 16px; padding: 32px; text-align: center;
-      transition: transform 0.3s, border-color 0.3s;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.4s, box-shadow 0.4s;
       position: relative;
     }
-    .price-card:hover { transform: translateY(-4px); }
-    .price-card.featured {
-      border-color: rgba(0, 212, 170, 0.4);
+    .price-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
-    .price-card.featured:hover { border-color: rgba(0, 212, 170, 0.6); }
+    .price-card.featured { border-color: rgba(0, 212, 170, 0.4); }
+    .price-card.featured:hover {
+      border-color: rgba(0, 212, 170, 0.6);
+      box-shadow: 0 0 30px rgba(0, 212, 170, 0.06), 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
 
     .price-popular {
       position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
@@ -311,23 +438,29 @@
     .price-card .price-cta {
       display: block; padding: 14px; background: var(--teal);
       color: #000; border-radius: 10px; font-size: 15px;
-      font-weight: 600; transition: transform 0.2s, opacity 0.2s;
-      text-align: center;
+      font-weight: 600; text-align: center;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.3s, opacity 0.2s;
     }
-    .price-card .price-cta:hover { transform: scale(0.97); opacity: 0.9; }
+    .price-card .price-cta:hover {
+      transform: scale(1.03); box-shadow: 0 0 24px rgba(0, 212, 170, 0.25); opacity: 1;
+    }
+    .price-card .price-cta:active { transform: scale(0.97); }
 
     .price-card.outline .price-cta {
-      background: transparent; border: 1px solid var(--border);
-      color: var(--text);
+      background: transparent; border: 1px solid var(--border); color: var(--text);
     }
-    .price-card.outline .price-cta:hover { border-color: var(--teal); color: var(--teal); }
+    .price-card.outline .price-cta:hover {
+      border-color: var(--teal); color: var(--teal);
+      box-shadow: 0 0 16px rgba(0, 212, 170, 0.15);
+    }
 
     .price-note {
       text-align: center; margin-top: 24px; font-size: 13px;
       color: var(--text-tertiary);
     }
 
-    /* ─── CTA ──────────────────────────────────────── */
+    /* ─── Bottom CTA ──────────────────────────────── */
     .bottom-cta {
       padding: 80px 0; text-align: center; border-top: 1px solid var(--border);
     }
@@ -336,13 +469,18 @@
       letter-spacing: -1px; margin-bottom: 16px;
     }
     .bottom-cta p { font-size: 17px; color: var(--text-secondary); margin-bottom: 32px; }
+
     .cta-button {
       display: inline-flex; align-items: center; gap: 10px;
       padding: 16px 36px; background: var(--teal); color: #000;
       border-radius: 12px; font-size: 17px; font-weight: 600;
-      transition: transform 0.2s, opacity 0.2s;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.3s, opacity 0.2s;
     }
-    .cta-button:hover { transform: scale(0.97); opacity: 0.9; }
+    .cta-button:hover {
+      transform: scale(1.04); box-shadow: 0 0 28px rgba(0, 212, 170, 0.3); opacity: 1;
+    }
+    .cta-button:active { transform: scale(0.97); }
     .cta-button svg { width: 20px; height: 20px; }
 
     /* ─── Footer ────────────────────────────────────── */
@@ -359,13 +497,17 @@
     .footer-bottom { border-top: 1px solid var(--border); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .footer-bottom p { font-size: 12px; color: var(--text-tertiary); }
 
-    @media (max-width: 768px) {
-      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
-      .pro-feature-row { grid-template-columns: 1fr; gap: 32px; }
-      .pro-feature-row.reverse { direction: ltr; }
-      .comparison-header, .comparison-row { grid-template-columns: 1fr 80px 80px; padding: 12px 16px; }
+    /* ─── Scroll Reveal ──────────────────────────────── */
+    .reveal {
+      opacity: 0; transform: translateY(32px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
     }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.08s; }
+    .reveal-d2 { transition-delay: 0.16s; }
 
+    /* ─── Animations ─────────────────────────────────── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(24px); }
       to { opacity: 1; transform: translateY(0); }
@@ -373,14 +515,36 @@
     .animate { opacity: 0; animation: fadeUp 0.6s ease-out forwards; }
     .animate-d1 { animation-delay: 0.1s; }
     .animate-d2 { animation-delay: 0.2s; }
-    .animate-d3 { animation-delay: 0.3s; }
-    .animate-d4 { animation-delay: 0.4s; }
+
+    /* ─── Responsive ──────────────────────────────────── */
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .nav-right .nav-cta { display: none; }
+      .hamburger { display: block; }
+      nav .container { padding: 0 20px; }
+    }
+
+    @media (max-width: 768px) {
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+      .pro-feature-row { grid-template-columns: 1fr; gap: 32px; }
+      .pro-feature-row.reverse { direction: ltr; }
+      .comparison-header, .comparison-row { grid-template-columns: 1fr 80px 80px; padding: 12px 16px; }
+    }
+
+    /* ─── Reduce Motion ──────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { transition: none; opacity: 1; transform: none; }
+      .hero-orb { animation: none; }
+      .pro-feature-visual, .price-card { transition: none; }
+    }
   </style>
 </head>
 <body>
 
+  <a href="#main-content" class="skip-nav">Skip to main content</a>
+
   <!-- Nav -->
-  <nav>
+  <nav id="main-nav" aria-label="Main navigation">
     <div class="container">
       <a href="/" class="nav-logo">nassau<span>.</span></a>
       <ul class="nav-links">
@@ -388,37 +552,100 @@
         <li><a href="how-it-works.html">How It Works</a></li>
         <li><a href="pro.html" class="active">Nassau Pro</a></li>
         <li><a href="support.html">Support</a></li>
-        <li><a href="/" class="nav-cta">Download</a></li>
       </ul>
-      <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
-        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
+      <div class="nav-right">
+        <a href="/#waitlist" class="nav-cta">Join Waitlist</a>
+        <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
     </div>
   </nav>
-  <div class="mobile-menu">
+  <div class="mobile-menu" id="mobile-menu" role="navigation" aria-label="Mobile navigation">
     <a href="features.html">Features</a>
     <a href="how-it-works.html">How It Works</a>
     <a href="pro.html" class="active">Nassau Pro</a>
     <a href="support.html">Support</a>
-    <a href="/" class="nav-cta">Download</a>
+    <a href="/#waitlist" class="nav-cta">Join Waitlist</a>
   </div>
 
   <!-- Hero -->
+  <main id="main-content">
   <section class="pro-hero">
     <div class="pro-hero-glow"></div>
+    <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
+    <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
     <div class="pro-badge animate">NASSAU PRO</div>
-    <h1 class="animate animate-d1">You're leaving money<br>on the <span class="accent">course.</span></h1>
-    <p class="animate animate-d2">Every round, you miss presses worth $20-50. You target the wrong opponents. You press on gut feel instead of data. Pro stops all of that.</p>
+    <h1 class="animate animate-d1">Scout. Press. <span class="accent">Flex.</span></h1>
+    <p class="animate animate-d2">Pre-round course intel. Live press advice when money's on the line. Shareable stats cards to prove it in the group chat. The edge your group doesn't know you have.</p>
   </section>
 
   <!-- Feature Deep Dives -->
   <section class="pro-features">
     <div class="container">
 
-      <!-- Press Advisor -->
-      <div class="pro-feature-row animate">
+      <!-- ═══ PILLAR 1: Before You Tee Off ═══ -->
+      <div class="pillar-header reveal">
+        <div class="pillar-tag">Before You Tee Off</div>
+        <h2 class="pillar-title">Know what you're walking into</h2>
+      </div>
+
+      <!-- Course Scouting -->
+      <div class="pro-feature-row reveal">
         <div class="pro-feature-visual">
-          <div class="visual-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="visual-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div class="visual-stat">Par 5s</div>
+          <div class="visual-label">Your Scoring Edge</div>
+        </div>
+        <div class="pro-feature-text">
+          <div class="feature-tag">Course Scouting</div>
+          <h2>Read the course before<br>you play it</h2>
+          <p>Playing a new course? Or one you haven't played in months? Pro gives you a hole-by-hole scouting report before you tee off. Know where birdie opportunities live and where the danger zones are.</p>
+          <ul>
+            <li>Hole-by-hole difficulty breakdown</li>
+            <li>Par type performance (your par 3s vs par 5s)</li>
+            <li>Birdie opportunity holes flagged</li>
+            <li>Course-specific scoring history</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Opponent Rankings -->
+      <div class="pro-feature-row reverse reveal">
+        <div class="pro-feature-visual">
+          <div class="visual-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0114 0v2"/><line x1="18" y1="8" x2="22" y2="8"/><line x1="20" y1="6" x2="20" y2="10"/></svg>
+          </div>
+          <div class="visual-stat">+$210</div>
+          <div class="visual-label">Most Profitable Opponent</div>
+        </div>
+        <div class="pro-feature-text">
+          <div class="feature-tag">Opponent Rankings</div>
+          <h2>Know who to target.<br>Know who to avoid.</h2>
+          <p>Not all opponents are equal. Pro ranks everyone in your group by how much money you've won or lost against them. Pick your matchups strategically instead of randomly.</p>
+          <ul>
+            <li>Friends ranked by net P/L against you</li>
+            <li>Most and least profitable opponents</li>
+            <li>Win rate and record by opponent</li>
+            <li>Best and worst matchups highlighted</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ═══ PILLAR 2: When Money's On The Line ═══ -->
+      <div class="pillar-header reveal">
+        <div class="pillar-tag">When Money's On The Line</div>
+        <h2 class="pillar-title">Real-time intelligence, mid-round</h2>
+      </div>
+
+      <!-- Press Advisor -->
+      <div class="pro-feature-row reveal">
+        <div class="pro-feature-visual">
+          <div class="visual-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
           <div class="visual-stat">73%</div>
           <div class="visual-label">Historical Win Rate</div>
         </div>
@@ -436,16 +663,18 @@
       </div>
 
       <!-- Matchup Intel -->
-      <div class="pro-feature-row reverse animate animate-d1">
+      <div class="pro-feature-row reverse reveal">
         <div class="pro-feature-visual">
-          <div class="visual-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+          <div class="visual-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
           <div class="visual-stat">7-3</div>
           <div class="visual-label">vs Your Rival</div>
         </div>
         <div class="pro-feature-text">
           <div class="feature-tag">Matchup Intel</div>
           <h2>Know who you own.<br>Know who owns you.</h2>
-          <p>You're 7-3 against Dave but 2-6 against Kevin. Pro shows you exactly who to target and who to play tight against, before the round starts.</p>
+          <p>You're 7-3 against Dave but 2-6 against Kevin. Pro shows your full head-to-head breakdown so you know exactly where you stand before placing any bet.</p>
           <ul>
             <li>Head-to-head W-L-T records</li>
             <li>Net P/L against each player</li>
@@ -455,42 +684,52 @@
         </div>
       </div>
 
-      <!-- Round Analysis -->
-      <div class="pro-feature-row animate animate-d2">
+      <!-- ═══ PILLAR 3: After The Round ═══ -->
+      <div class="pillar-header reveal">
+        <div class="pillar-tag">After The Round</div>
+        <h2 class="pillar-title">Prove it. Track it. Flex it.</h2>
+      </div>
+
+      <!-- Group Leaderboard -->
+      <div class="pro-feature-row reveal">
         <div class="pro-feature-visual">
-          <div class="visual-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-          <div class="visual-stat">-2.4</div>
-          <div class="visual-label">Strokes vs Average</div>
+          <div class="visual-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="14" width="4" height="8" rx="1"/><rect x="10" y="6" width="4" height="16" rx="1"/><rect x="16" y="10" width="4" height="12" rx="1"/></svg>
+          </div>
+          <div class="visual-stat">#2</div>
+          <div class="visual-label">Season Ranking</div>
         </div>
         <div class="pro-feature-text">
-          <div class="feature-tag">Round Analysis</div>
-          <h2>See every dollar you<br>left on the table</h2>
-          <p>Last Saturday you could have pressed on hole 14 and didn't. That was a $10 press you would have won. Pro flags every missed opportunity after each round.</p>
+          <div class="feature-tag">Group Leaderboard</div>
+          <h2>Season standings<br>with your crew</h2>
+          <p>Track cumulative P/L across your entire group, updated after every round. Monthly, quarterly, or full-season views. Know exactly who's on top and who's buying drinks.</p>
           <ul>
-            <li>Score vs season average comparison</li>
-            <li>Best and worst holes identified</li>
-            <li>Missed press opportunities flagged</li>
-            <li>Actionable takeaways per round</li>
+            <li>Season-long cumulative P/L rankings</li>
+            <li>Timeframe toggle (month, quarter, year)</li>
+            <li>Win rate and game count per player</li>
+            <li>Competitive FOMO that keeps everyone playing</li>
           </ul>
         </div>
       </div>
 
-      <!-- Form Tracker -->
-      <div class="pro-feature-row reverse animate animate-d3">
+      <!-- Shareable Stats Cards -->
+      <div class="pro-feature-row reverse reveal">
         <div class="pro-feature-visual">
-          <div class="visual-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-          <div class="visual-stat">HOT</div>
-          <div class="visual-label">Current Form</div>
+          <div class="visual-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="12" y2="8"/><line x1="8" y1="16" x2="14" y2="16"/></svg>
+          </div>
+          <div class="visual-stat">+$340</div>
+          <div class="visual-label">Season P/L Card</div>
         </div>
         <div class="pro-feature-text">
-          <div class="feature-tag">Form Tracker</div>
-          <h2>Bet bigger when you're hot.<br>Pull back when you're not.</h2>
-          <p>You're on a 3-game winning streak and your scoring average dropped 2 strokes this month. Pro shows you when you're playing your best so you can size your bets accordingly.</p>
+          <div class="feature-tag">Shareable Stats Cards</div>
+          <h2>Built to flex.<br>Designed to send.</h2>
+          <p>Auto-generated graphics that look sharp in the group chat. Your W-L record, season P/L, head-to-head dominance, win streaks. One tap to share. Maximum trash talk potential.</p>
           <ul>
-            <li>Hot / Cold / Steady form indicator</li>
-            <li>Rolling scoring averages</li>
-            <li>Win streak tracking</li>
-            <li>Handicap trajectory over time</li>
+            <li>Auto-generated stat graphics</li>
+            <li>Head-to-head dominance cards</li>
+            <li>Season P/L and win streak cards</li>
+            <li>One-tap share to iMessage or group chat</li>
           </ul>
         </div>
       </div>
@@ -501,10 +740,10 @@
   <!-- Comparison -->
   <section class="comparison">
     <div class="container">
-      <div class="section-label">Compare Plans</div>
-      <h2 class="section-title">Free vs Pro</h2>
+      <div class="section-label reveal">Compare Plans</div>
+      <h2 class="section-title reveal reveal-d1">Free vs Pro</h2>
 
-      <div class="comparison-table">
+      <div class="comparison-table reveal reveal-d2">
         <div class="comparison-header">
           <span>Feature</span>
           <span>Free</span>
@@ -536,6 +775,16 @@
           <span class="check">&#10003;</span>
         </div>
         <div class="comparison-row">
+          <span>Course Scouting</span>
+          <span class="dash">&#8212;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
+          <span>Opponent Rankings</span>
+          <span class="dash">&#8212;</span>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="comparison-row">
           <span>Press Advisor</span>
           <span class="dash">&#8212;</span>
           <span class="check">&#10003;</span>
@@ -546,17 +795,12 @@
           <span class="check">&#10003;</span>
         </div>
         <div class="comparison-row">
-          <span>Round Analysis</span>
+          <span>Group Leaderboard</span>
           <span class="dash">&#8212;</span>
           <span class="check">&#10003;</span>
         </div>
         <div class="comparison-row">
-          <span>Form Tracker</span>
-          <span class="dash">&#8212;</span>
-          <span class="check">&#10003;</span>
-        </div>
-        <div class="comparison-row">
-          <span>Scoring Trends</span>
+          <span>Shareable Stats Cards</span>
           <span class="dash">&#8212;</span>
           <span class="check">&#10003;</span>
         </div>
@@ -567,25 +811,25 @@
   <!-- Pricing -->
   <section class="pricing">
     <div class="container">
-      <div class="section-label">The Investment</div>
-      <h2 class="section-title">One extra press win per month<br>and Pro pays for itself.</h2>
-      <p class="section-subtitle">Your $5 Nassau press that you would have lost without data? That's your subscription covered. Everything after that is profit.</p>
+      <div class="section-label reveal">The Investment</div>
+      <h2 class="section-title reveal reveal-d1">One extra press win per month<br>and Pro pays for itself.</h2>
+      <p class="section-subtitle reveal reveal-d2">Your $5 Nassau press that you would have lost without data? That's your subscription covered. Everything after that is profit.</p>
 
       <div class="pricing-grid">
-        <div class="price-card outline">
+        <div class="price-card outline reveal">
           <h3>Monthly</h3>
           <div class="price-amount"><span class="currency">$</span>4.99</div>
           <div class="price-period">per month</div>
           <a href="/" class="price-cta">Get Started</a>
         </div>
-        <div class="price-card featured">
+        <div class="price-card featured reveal reveal-d1">
           <div class="price-popular">Best Value</div>
           <h3>Yearly</h3>
           <div class="price-amount"><span class="currency">$</span>29.99</div>
           <div class="price-period">per year (save 50%)</div>
           <a href="/" class="price-cta">Get Started</a>
         </div>
-        <div class="price-card outline">
+        <div class="price-card outline reveal reveal-d2">
           <h3>Lifetime</h3>
           <div class="price-amount"><span class="currency">$</span>79.99</div>
           <div class="price-period">one time purchase</div>
@@ -597,16 +841,15 @@
   </section>
 
   <!-- Bottom CTA -->
-  <section class="bottom-cta">
+  <section class="bottom-cta reveal">
     <div class="container">
       <h2>Stop guessing.<br>Start winning.</h2>
-      <p>Download Nassau and try Pro free for 7 days. Your wallet will thank you.</p>
-      <a href="/" class="cta-button">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 21.99 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 21.99C7.79 22.03 6.8 20.68 5.96 19.47C4.25 16.97 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/></svg>
-        Download for iOS
-      </a>
+      <p>Join the waitlist and try Pro free for 7 days. Your wallet will thank you.</p>
+      <a href="/#waitlist" class="cta-button">Join the Waitlist</a>
     </div>
   </section>
+
+  </main>
 
   <!-- Footer -->
   <footer>
@@ -622,7 +865,7 @@
             <li><a href="features.html">Features</a></li>
             <li><a href="how-it-works.html">How It Works</a></li>
             <li><a href="pro.html">Nassau Pro</a></li>
-            <li><a href="/">Download</a></li>
+            <li><a href="/#waitlist">Join Waitlist</a></li>
           </ul>
         </div>
         <div class="footer-col">
@@ -640,6 +883,54 @@
       </div>
     </div>
   </footer>
+
+  <script>
+    // ─── Nav scroll effect ────────────────────────────
+    var nav = document.getElementById('main-nav');
+    window.addEventListener('scroll', function() {
+      if (window.scrollY > 40) {
+        nav.classList.add('scrolled');
+      } else {
+        nav.classList.remove('scrolled');
+      }
+    });
+
+    // Close mobile menu on link click + sync aria-expanded
+    var hamburger = document.querySelector('.hamburger');
+    var mobileMenu = document.querySelector('.mobile-menu');
+
+    hamburger.addEventListener('click', function() {
+      var isOpen = mobileMenu.classList.contains('open');
+      hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      hamburger.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+    });
+
+    document.querySelectorAll('.mobile-menu a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        hamburger.setAttribute('aria-label', 'Open menu');
+      });
+    });
+
+    // ─── Scroll Reveal (IntersectionObserver) ──────────
+    var revealElements = document.querySelectorAll('.reveal');
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.12,
+      rootMargin: '0px 0px -40px 0px'
+    });
+
+    revealElements.forEach(function(el) {
+      revealObserver.observe(el);
+    });
+  </script>
 
 </body>
 </html>
