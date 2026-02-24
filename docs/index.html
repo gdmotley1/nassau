@@ -15,11 +15,24 @@
   <meta property="og:url" content="https://nassauapp.com/">
   <meta property="og:site_name" content="Nassau">
   <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://nassauapp.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Nassau - The Golf Betting App">
   <meta name="twitter:description" content="Track bets, settle up instantly, and get AI-powered press advice.">
+  <meta name="twitter:image" content="https://nassauapp.com/og-image.png">
+
+  <!-- Google Analytics (replace G-XXXXXXXXXX with your GA4 measurement ID) -->
+  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script> -->
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
@@ -655,7 +668,143 @@
     .animate-d3 { animation-delay: 0.3s; }
     .animate-d4 { animation-delay: 0.4s; }
     .animate-d5 { animation-delay: 0.5s; }
+
+    /* ─── Waitlist Form ──────────────────────────────── */
+    .waitlist-form {
+      display: flex;
+      gap: 10px;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .waitlist-form input[type="email"] {
+      flex: 1;
+      padding: 16px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 0;
+    }
+
+    .waitlist-form input[type="email"]::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .waitlist-form input[type="email"]:focus {
+      border-color: var(--teal);
+    }
+
+    .waitlist-form button {
+      padding: 16px 28px;
+      background: var(--teal);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .waitlist-form button:hover {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    .waitlist-form button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .waitlist-msg {
+      margin-top: 12px;
+      font-size: 14px;
+      min-height: 20px;
+    }
+
+    .waitlist-msg.success { color: var(--green); }
+    .waitlist-msg.error { color: var(--red); }
+
+    .waitlist-count {
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--text-tertiary);
+    }
+
+    .waitlist-count strong {
+      color: var(--teal);
+      font-weight: 700;
+    }
+
+    /* Bottom CTA waitlist */
+    .cta-section .waitlist-form {
+      max-width: 480px;
+    }
+
+    .cta-section .waitlist-form input[type="email"] {
+      padding: 18px 20px;
+      font-size: 17px;
+    }
+
+    .cta-section .waitlist-form button {
+      padding: 18px 32px;
+      font-size: 17px;
+    }
+
+    @media (max-width: 480px) {
+      .waitlist-form {
+        flex-direction: column;
+      }
+      .waitlist-form button {
+        width: 100%;
+      }
+    }
+
+    /* ─── Social Links ───────────────────────────────── */
+    .social-links {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .social-links a {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .social-links a:hover {
+      border-color: var(--teal);
+      transform: scale(0.97);
+      opacity: 1;
+    }
+
+    .social-links a svg {
+      width: 18px; height: 18px;
+      fill: var(--text-secondary);
+    }
+
+    .social-links a:hover svg {
+      fill: var(--teal);
+    }
   </style>
+
+  <!-- Supabase JS Client (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -668,7 +817,7 @@
         <li><a href="how-it-works.html">How It Works</a></li>
         <li><a href="pro.html">Nassau Pro</a></li>
         <li><a href="support.html">Support</a></li>
-        <li><a href="#download" class="nav-cta">Download</a></li>
+        <li><a href="#waitlist" class="nav-cta">Join Waitlist</a></li>
       </ul>
       <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')" aria-label="Open menu">
         <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -680,7 +829,7 @@
     <a href="how-it-works.html">How It Works</a>
     <a href="pro.html">Nassau Pro</a>
     <a href="support.html">Support</a>
-    <a href="#download" class="nav-cta">Download</a>
+    <a href="#waitlist" class="nav-cta">Join Waitlist</a>
   </div>
 
   <!-- Hero -->
@@ -690,11 +839,12 @@
       <div class="hero-badge animate">Coming Soon to iOS</div>
       <h1 class="animate animate-d1">Stop losing money<br>on the <span class="accent">golf course.</span></h1>
       <p class="animate animate-d2">Nassau tracks every bet, calculates every payout, and tells you exactly when to press. The golf betting app your group has been waiting for.</p>
-      <a href="#download" class="hero-cta animate animate-d3">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 21.99 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 21.99C7.79 22.03 6.8 20.68 5.96 19.47C4.25 16.97 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/></svg>
-        Download for iOS
-      </a>
-      <p class="hero-sub animate animate-d4">Free to play. Pro features for the edge.</p>
+      <form class="waitlist-form animate animate-d3" id="hero-waitlist" onsubmit="handleWaitlist(event, 'hero')">
+        <input type="email" placeholder="Enter your email" required autocomplete="email">
+        <button type="submit">Join Waitlist</button>
+      </form>
+      <div class="waitlist-msg animate animate-d3" id="hero-msg"></div>
+      <p class="hero-sub animate animate-d4" id="hero-count"></p>
     </div>
   </section>
 
@@ -885,16 +1035,17 @@
     </div>
   </section>
 
-  <!-- CTA -->
-  <section class="cta-section" id="download">
+  <!-- CTA / Waitlist -->
+  <section class="cta-section" id="waitlist">
     <div class="container">
       <h2>Your group is leaving<br>money on the table.</h2>
-      <p>Download Nassau and start betting like you mean it.</p>
-      <a href="#" class="cta-button">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 21.99 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 21.99C7.79 22.03 6.8 20.68 5.96 19.47C4.25 16.97 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/></svg>
-        Download for iOS
-      </a>
-      <p class="cta-note">Free to download. Nassau Pro subscription optional.</p>
+      <p>Join the waitlist. Be first to know when Nassau launches.</p>
+      <form class="waitlist-form" id="cta-waitlist" onsubmit="handleWaitlist(event, 'cta')">
+        <input type="email" placeholder="Enter your email" required autocomplete="email">
+        <button type="submit">Join Waitlist</button>
+      </form>
+      <div class="waitlist-msg" id="cta-msg"></div>
+      <p class="cta-note" id="cta-count"></p>
     </div>
   </section>
 
@@ -905,6 +1056,17 @@
         <div class="footer-brand">
           <h3>nassau<span>.</span></h3>
           <p>Track bets, settle up instantly, and get AI-powered insights. The smartest way to bet on the golf course.</p>
+          <div class="social-links">
+            <a href="https://tiktok.com/@nassauapp" target="_blank" rel="noopener" aria-label="TikTok">
+              <svg viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.52a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.73a8.19 8.19 0 004.76 1.52v-3.4a4.85 4.85 0 01-1-.16z"/></svg>
+            </a>
+            <a href="https://instagram.com/nassauapp" target="_blank" rel="noopener" aria-label="Instagram">
+              <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.5"/></svg>
+            </a>
+            <a href="https://x.com/nassauapp" target="_blank" rel="noopener" aria-label="X">
+              <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+          </div>
         </div>
         <div class="footer-col">
           <h4>Product</h4>
@@ -912,7 +1074,7 @@
             <li><a href="features.html">Features</a></li>
             <li><a href="how-it-works.html">How It Works</a></li>
             <li><a href="pro.html">Nassau Pro</a></li>
-            <li><a href="#download">Download</a></li>
+            <li><a href="#waitlist">Join Waitlist</a></li>
           </ul>
         </div>
         <div class="footer-col">
@@ -930,6 +1092,84 @@
       </div>
     </div>
   </footer>
+
+  <script>
+    // ─── Supabase Waitlist ──────────────────────────────
+    const SUPABASE_URL = 'https://ptpsvjqojabjfdyltkjs.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0cHN2anFvamFiamZkeWx0a2pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExOTQ4OTMsImV4cCI6MjA4Njc3MDg5M30.jTPdxdKWBpbOZqwaYEx1pm3zq6WHmU8FocIgwjxFJ4Y';
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Get UTM source from URL params (for tracking ad campaigns)
+    function getSource() {
+      var params = new URLSearchParams(window.location.search);
+      return params.get('utm_source') || params.get('ref') || 'website';
+    }
+
+    // Load and display waitlist count
+    async function loadWaitlistCount() {
+      try {
+        var resp = await sb.rpc('get_waitlist_count');
+        if (resp.data && resp.data > 0) {
+          var text = 'Join <strong>' + resp.data.toLocaleString() + '+</strong> golfers on the waitlist';
+          var heroCount = document.getElementById('hero-count');
+          var ctaCount = document.getElementById('cta-count');
+          if (heroCount) heroCount.innerHTML = text;
+          if (ctaCount) ctaCount.innerHTML = text;
+        }
+      } catch (e) {
+        // Silently fail — count is optional social proof
+      }
+    }
+
+    // Handle waitlist form submission
+    async function handleWaitlist(e, formId) {
+      e.preventDefault();
+      var form = e.target;
+      var input = form.querySelector('input[type="email"]');
+      var button = form.querySelector('button');
+      var msgEl = document.getElementById(formId + '-msg');
+      var email = input.value.trim().toLowerCase();
+
+      if (!email) return;
+
+      button.disabled = true;
+      button.textContent = 'Joining...';
+      msgEl.className = 'waitlist-msg';
+      msgEl.textContent = '';
+
+      try {
+        var resp = await sb.from('waitlist').insert({
+          email: email,
+          source: getSource(),
+          referrer: document.referrer || null
+        });
+
+        if (resp.error) {
+          if (resp.error.code === '23505') {
+            msgEl.className = 'waitlist-msg success';
+            msgEl.textContent = "You're already on the list. We'll be in touch.";
+          } else {
+            throw resp.error;
+          }
+        } else {
+          msgEl.className = 'waitlist-msg success';
+          msgEl.textContent = "You're in. We'll let you know when Nassau is ready.";
+          input.value = '';
+          loadWaitlistCount();
+        }
+      } catch (err) {
+        msgEl.className = 'waitlist-msg error';
+        msgEl.textContent = 'Something went wrong. Try again.';
+      }
+
+      button.disabled = false;
+      button.textContent = 'Join Waitlist';
+    }
+
+    // Load count on page load
+    loadWaitlistCount();
+  </script>
 
 </body>
 </html>
