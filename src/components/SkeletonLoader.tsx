@@ -68,7 +68,7 @@ export function GameCardSkeleton() {
   );
 }
 
-/** Skeleton for dashboard hero */
+/** Skeleton for dashboard hero (legacy) */
 export function DashboardHeroSkeleton() {
   return (
     <View style={skeletonStyles.hero}>
@@ -77,6 +77,30 @@ export function DashboardHeroSkeleton() {
       <SkeletonLoader width={180} height={56} borderRadius={8} />
       <View style={skeletonStyles.spacer} />
       <SkeletonLoader width={160} height={14} borderRadius={4} />
+    </View>
+  );
+}
+
+/** Skeleton for new dashboard welcome layout (status line + quick actions + month card) */
+export function DashboardWelcomeSkeleton() {
+  return (
+    <View style={skeletonStyles.welcome}>
+      {/* Status line */}
+      <View style={skeletonStyles.welcomeStatus}>
+        <SkeletonLoader width="55%" height={16} borderRadius={4} />
+      </View>
+
+      {/* Quick action chips */}
+      <View style={skeletonStyles.welcomeChips}>
+        <SkeletonLoader width="30%" height={56} borderRadius={12} />
+        <SkeletonLoader width="30%" height={56} borderRadius={12} />
+        <SkeletonLoader width="30%" height={56} borderRadius={12} />
+      </View>
+
+      {/* Month summary card */}
+      <View style={skeletonStyles.welcomeCard}>
+        <SkeletonLoader width="100%" height={100} borderRadius={12} />
+      </View>
     </View>
   );
 }
@@ -173,5 +197,20 @@ const skeletonStyles = StyleSheet.create({
   },
   sectionSkeleton: {
     marginBottom: 20,
+  },
+  welcome: {
+    paddingHorizontal: 20,
+  },
+  welcomeStatus: {
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  welcomeChips: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  welcomeCard: {
+    marginBottom: 8,
   },
 });

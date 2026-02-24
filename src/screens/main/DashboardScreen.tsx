@@ -6,7 +6,6 @@ import {
   ScrollView,
   RefreshControl,
   Pressable,
-  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -16,23 +15,24 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { useAuthStore, useGameStore } from '../../stores';
-import { RHMoneyDisplay } from '../../components/RHMoneyDisplay';
+import { useAuthStore, useGameStore, useUIStore } from '../../stores';
 import { RHCard } from '../../components/RHCard';
+import { RHButton } from '../../components/RHButton';
 import { AceInsightCard } from '../../components/AceInsightCard';
 import { EmptyState } from '../../components/EmptyState';
+import { RHErrorState } from '../../components/RHErrorState';
+import { SwipeableGameCard } from '../../components/SwipeableGameCard';
 import { GolfBackground } from '../../components/backgrounds';
 import {
-  DashboardHeroSkeleton,
+  DashboardWelcomeSkeleton,
   GameCardSkeleton,
 } from '../../components/SkeletonLoader';
 import {
   formatGameType,
   formatDateShort,
   formatMoneyShort,
-  formatRecord,
   formatMoney,
 } from '../../utils/format';
 import { hapticLight } from '../../utils/haptics';
@@ -44,7 +44,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../navigation/types';
 import type { ScoringTrends, HeadToHeadRecord, ScoreRow, NassauSettings } from '../../types';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Props = {
@@ -64,15 +63,42 @@ function getFirstName(name: string): string {
   return name.split(' ')[0];
 }
 
+/** Get contextual status message based on current state */
+function getStatusMessage(
+  activeGames: any[],
+  totalGames: number,
+): { text: string; isTeal: boolean } {
+  const inProgressGames = activeGames.filter((g) => g.status === 'in_progress');
+  const lobbyGames = activeGames.filter((g) => g.status === 'created');
+
+  if (inProgressGames.length > 0) {
+    return {
+      text: inProgressGames.length === 1
+        ? 'You have a game in progress'
+        : `You have ${inProgressGames.length} games in progress`,
+      isTeal: true,
+    };
+  }
+  if (lobbyGames.length > 0) {
+    return { text: 'Your game is ready to go', isTeal: true };
+  }
+  if (totalGames > 0) {
+    return { text: 'Ready for the next round?', isTeal: false };
+  }
+  return { text: 'Welcome to Nassau', isTeal: false };
+}
+
 export function DashboardScreen({ navigation }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
-  const { activeGames, activeGameScores, recentGames, recentGameNets, monthlyNet, wins, losses, isLoading, fetchDashboardData } =
+  const { activeGames, activeGameScores, recentGames, recentGameNets, monthlyNet, wins, losses, isLoading, dashboardError, fetchDashboardData } =
     useGameStore();
+  const showToast = useUIStore((s) => s.showToast);
 
   const { isPremium, openPaywall } = useAcePaywall();
   const [refreshing, setRefreshing] = useState(false);
+  const [closeSignal, setCloseSignal] = useState(0);
   const [scoringTrends, setScoringTrends] = useState<ScoringTrends | null>(null);
   const [topRival, setTopRival] = useState<HeadToHeadRecord | null>(null);
   const [aceDismissed, setAceDismissed] = useState(false);
@@ -80,7 +106,6 @@ export function DashboardScreen({ navigation }: Props) {
   useEffect(() => {
     if (user?.id) {
       fetchDashboardData(user.id);
-      // Fetch Ace analytics only for premium users
       if (isPremium) {
         getScoringTrends(user.id).then((res) => {
           if (res.data) setScoringTrends(res.data);
@@ -116,6 +141,8 @@ export function DashboardScreen({ navigation }: Props) {
 
   const totalGames = wins + losses;
   const firstName = user?.name ? getFirstName(user.name) : '';
+  const hasActiveGames = activeGames.length > 0;
+  const statusMessage = getStatusMessage(activeGames, totalGames);
 
   // Form indicator badge
   const formBadge = scoringTrends?.formIndicator;
@@ -171,77 +198,56 @@ export function DashboardScreen({ navigation }: Props) {
           )}
         </Animated.View>
 
-        {/* ─── Hero: Monthly P/L ─── */}
+        {/* ─── Status Line + CTA ─── */}
         {isLoading && !refreshing ? (
-          <DashboardHeroSkeleton />
+          <DashboardWelcomeSkeleton />
         ) : (
           <Animated.View
             entering={FadeInDown.duration(500).delay(100)}
-            style={styles.hero}
+            style={styles.statusSection}
           >
-            <LinearGradient
-              colors={[theme.colors.teal[500] + '08', 'transparent']}
-              style={styles.heroGradient}
-            />
             <Text
-              style={[styles.heroLabel, { color: theme.semantic.textSecondary }]}
+              style={[
+                styles.statusText,
+                {
+                  color: statusMessage.isTeal
+                    ? theme.colors.teal[500]
+                    : theme.semantic.textSecondary,
+                },
+              ]}
             >
-              This Month
+              {statusMessage.text}
             </Text>
-            <RHMoneyDisplay amount={monthlyNet} size="large" animate />
-            {totalGames > 0 && (
-              <Text
-                style={[styles.heroStats, { color: theme.semantic.textSecondary }]}
-              >
-                {formatRecord(wins, losses)}  ·  {totalGames} games
-              </Text>
+            {!hasActiveGames && (
+              <View style={styles.ctaContainer}>
+                <RHButton
+                  title="Start a Game"
+                  variant="primary"
+                  onPress={() => {
+                    hapticLight();
+                    navigation.navigate('NewGameTab' as any);
+                  }}
+                />
+              </View>
             )}
           </Animated.View>
         )}
 
-        {/* ─── Quick Stats Row ─── */}
-        {isPremium && totalGames > 0 && scoringTrends && (
-          <Animated.View
-            entering={FadeInDown.duration(500).delay(200)}
-            style={styles.quickStatsRow}
-          >
-            <QuickStat
-              label="Avg Score"
-              value={scoringTrends.last5AvgScore > 0 ? scoringTrends.last5AvgScore.toFixed(0) : '--'}
-              sublabel="Last 5"
-              theme={theme}
-            />
-            <View style={[styles.quickStatDivider, { backgroundColor: theme.semantic.border }]} />
-            <QuickStat
-              label="Win Rate"
-              value={totalGames > 0 ? `${((wins / totalGames) * 100).toFixed(0)}%` : '--'}
-              sublabel={`${wins}W ${losses}L`}
-              theme={theme}
-              color={wins >= losses ? theme.colors.green[500] : theme.colors.red[500]}
-            />
-            <View style={[styles.quickStatDivider, { backgroundColor: theme.semantic.border }]} />
-            <QuickStat
-              label="Trend"
-              value={scoringTrends.recentTrend > 0
-                ? `${scoringTrends.recentTrend.toFixed(1)}`
-                : scoringTrends.recentTrend < 0
-                  ? `${scoringTrends.recentTrend.toFixed(1)}`
-                  : '--'}
-              sublabel={scoringTrends.recentTrend > 0 ? 'Improving' : scoringTrends.recentTrend < 0 ? 'Declining' : 'Steady'}
-              theme={theme}
-              color={scoringTrends.recentTrend > 0
-                ? theme.colors.green[500]
-                : scoringTrends.recentTrend < 0
-                  ? theme.colors.red[500]
-                  : theme.semantic.textSecondary}
-            />
-          </Animated.View>
+        {/* ─── Error State ─── */}
+        {dashboardError && !isLoading && activeGames.length === 0 && recentGames.length === 0 && (
+          <RHErrorState
+            title="Couldn't load your games"
+            description={dashboardError}
+            onRetry={() => {
+              if (user?.id) fetchDashboardData(user.id);
+            }}
+          />
         )}
 
-        {/* ─── Active Games ─── */}
+        {/* ─── Active Games (promoted to top) ─── */}
         {activeGames.length > 0 && (
           <Animated.View
-            entering={FadeInDown.duration(500).delay(300)}
+            entering={FadeInDown.duration(500).delay(150)}
             style={styles.section}
           >
             <Text
@@ -268,10 +274,70 @@ export function DashboardScreen({ navigation }: Props) {
           </Animated.View>
         )}
 
+        {/* ─── Quick Actions ─── */}
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(250)}
+          style={styles.quickActionsRow}
+        >
+          <QuickActionChip
+            icon="plus-circle"
+            label="New Game"
+            onPress={() => {
+              hapticLight();
+              navigation.navigate('NewGameTab' as any);
+            }}
+            theme={theme}
+          />
+          <QuickActionChip
+            icon="users"
+            label="Friends"
+            onPress={() => {
+              hapticLight();
+              const parent = navigation.getParent();
+              if (parent) {
+                parent.navigate('ProfileTab', { screen: 'FriendsList' });
+              }
+            }}
+            theme={theme}
+          />
+          <QuickActionChip
+            icon="clock"
+            label="History"
+            onPress={() => {
+              hapticLight();
+              navigation.navigate('HistoryTab' as any);
+            }}
+            theme={theme}
+          />
+        </Animated.View>
+
+        {/* ─── This Month Summary ─── */}
+        {totalGames > 0 && (
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(350)}
+            style={styles.section}
+          >
+            <MonthSummaryCard
+              monthlyNet={monthlyNet}
+              wins={wins}
+              losses={losses}
+              totalGames={totalGames}
+              theme={theme}
+              onPress={() => {
+                hapticLight();
+                const parent = navigation.getParent();
+                if (parent) {
+                  parent.navigate('ProfileTab', { screen: 'ProfileMain' });
+                }
+              }}
+            />
+          </Animated.View>
+        )}
+
         {/* ─── Ace Rival Insight ─── */}
         {topRival && topRival.gamesPlayed >= 2 && !aceDismissed && (
           <Animated.View
-            entering={FadeInDown.duration(500).delay(400)}
+            entering={FadeInDown.duration(500).delay(450)}
             style={styles.section}
           >
             <AcePremiumGate
@@ -309,7 +375,7 @@ export function DashboardScreen({ navigation }: Props) {
           </View>
         ) : recentGames.length > 0 ? (
           <Animated.View
-            entering={FadeInDown.duration(500).delay(activeGames.length > 0 ? 500 : 300)}
+            entering={FadeInDown.duration(500).delay(hasActiveGames ? 550 : 400)}
             style={styles.section}
           >
             <Text
@@ -318,22 +384,47 @@ export function DashboardScreen({ navigation }: Props) {
               Recent
             </Text>
             {recentGames.map((game) => (
-              <RecentGameCard
+              <SwipeableGameCard
                 key={game.id}
-                game={game}
-                net={recentGameNets[game.id] ?? 0}
-                theme={theme}
-                onPress={() => {
-                  hapticLight();
-                  navigation.navigate('GameDetail', { gameId: game.id });
-                }}
-              />
+                closeSignal={closeSignal}
+                onOpen={() => setCloseSignal((s) => s + 1)}
+                actions={[
+                  {
+                    icon: 'eye',
+                    label: 'View',
+                    color: theme.colors.teal[500],
+                    onPress: () => {
+                      hapticLight();
+                      navigation.navigate('GameDetail', { gameId: game.id });
+                    },
+                  },
+                  {
+                    icon: 'share',
+                    label: 'Share',
+                    color: theme.colors.gray[500],
+                    onPress: () => {
+                      hapticLight();
+                      showToast('Sharing coming soon', 'info');
+                    },
+                  },
+                ]}
+              >
+                <RecentGameCard
+                  game={game}
+                  net={recentGameNets[game.id] ?? 0}
+                  theme={theme}
+                  onPress={() => {
+                    hapticLight();
+                    navigation.navigate('GameDetail', { gameId: game.id });
+                  }}
+                />
+              </SwipeableGameCard>
             ))}
 
             <Pressable
               onPress={() => {
                 hapticLight();
-                navigation.navigate('HistoryTab');
+                navigation.navigate('HistoryTab' as any);
               }}
               style={styles.seeAllButton}
             >
@@ -348,10 +439,10 @@ export function DashboardScreen({ navigation }: Props) {
           !isLoading && (
             <Animated.View entering={FadeInDown.duration(500).delay(200)}>
               <EmptyState
-                title="No games yet"
-                description="Create your first game to start tracking bets with friends."
+                title="Your golf journey starts here"
+                description="Create your first game and start tracking bets with friends."
                 actionTitle="Create Game"
-                onAction={() => navigation.navigate('NewGameTab')}
+                onAction={() => navigation.navigate('NewGameTab' as any)}
               />
             </Animated.View>
           )
@@ -363,32 +454,117 @@ export function DashboardScreen({ navigation }: Props) {
 
 // ─── Sub-components ──────────────────────────────────────────────
 
-/** Quick stat pill in the horizontal row */
-function QuickStat({
+/** Quick action chip for the horizontal action row */
+function QuickActionChip({
+  icon,
   label,
-  value,
-  sublabel,
+  onPress,
   theme,
-  color,
 }: {
+  icon: React.ComponentProps<typeof Feather>['name'];
   label: string;
-  value: string;
-  sublabel: string;
+  onPress: () => void;
   theme: any;
-  color?: string;
 }) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const shadowStyle = theme.isDark
+    ? { borderWidth: 1, borderColor: theme.semantic.border }
+    : theme.shadows.sm;
+
   return (
-    <View style={styles.quickStatItem}>
-      <Text style={[styles.quickStatValue, { color: color ?? theme.semantic.textPrimary }]}>
-        {value}
-      </Text>
-      <Text style={[styles.quickStatLabel, { color: theme.semantic.textSecondary }]}>
+    <AnimatedPressable
+      onPressIn={() => { scale.value = withSpring(0.95, springs.snappy); }}
+      onPressOut={() => { scale.value = withSpring(1, springs.bouncy); }}
+      onPress={onPress}
+      style={[
+        chipStyles.chip,
+        { backgroundColor: theme.semantic.card },
+        shadowStyle,
+        animatedStyle,
+      ]}
+    >
+      <Feather name={icon} size={20} color={theme.colors.teal[500]} />
+      <Text style={[chipStyles.label, { color: theme.semantic.textPrimary }]}>
         {label}
       </Text>
-      <Text style={[styles.quickStatSublabel, { color: theme.semantic.textSecondary }]}>
-        {sublabel}
+    </AnimatedPressable>
+  );
+}
+
+/** This Month summary card — compact P/L + record + games */
+function MonthSummaryCard({
+  monthlyNet,
+  wins: w,
+  losses: l,
+  totalGames,
+  theme,
+  onPress,
+}: {
+  monthlyNet: number;
+  wins: number;
+  losses: number;
+  totalGames: number;
+  theme: any;
+  onPress: () => void;
+}) {
+  const netColor = monthlyNet > 0
+    ? theme.colors.green[500]
+    : monthlyNet < 0
+      ? theme.colors.red[500]
+      : theme.semantic.textSecondary;
+
+  return (
+    <RHCard onPress={onPress}>
+      <Text style={[monthStyles.cardLabel, { color: theme.semantic.textSecondary }]}>
+        THIS MONTH
       </Text>
-    </View>
+      <View style={monthStyles.row}>
+        {/* Net P/L */}
+        <View style={monthStyles.statColumn}>
+          <Text style={[monthStyles.statValue, { color: netColor }]}>
+            {formatMoneyShort(monthlyNet)}
+          </Text>
+          <Text style={[monthStyles.statLabel, { color: theme.semantic.textSecondary }]}>
+            Net
+          </Text>
+        </View>
+
+        <View style={[monthStyles.divider, { backgroundColor: theme.semantic.border }]} />
+
+        {/* Record */}
+        <View style={monthStyles.statColumn}>
+          <Text style={[monthStyles.statValue, { color: theme.semantic.textPrimary }]}>
+            {w}-{l}
+          </Text>
+          <Text style={[monthStyles.statLabel, { color: theme.semantic.textSecondary }]}>
+            Record
+          </Text>
+        </View>
+
+        <View style={[monthStyles.divider, { backgroundColor: theme.semantic.border }]} />
+
+        {/* Games */}
+        <View style={monthStyles.statColumn}>
+          <Text style={[monthStyles.statValue, { color: theme.semantic.textPrimary }]}>
+            {totalGames}
+          </Text>
+          <Text style={[monthStyles.statLabel, { color: theme.semantic.textSecondary }]}>
+            Games
+          </Text>
+        </View>
+      </View>
+
+      {/* See details hint */}
+      <View style={monthStyles.detailsRow}>
+        <Text style={[monthStyles.detailsText, { color: theme.colors.teal[500] }]}>
+          See full stats {'\u203A'}
+        </Text>
+      </View>
+    </RHCard>
   );
 }
 
@@ -559,7 +735,7 @@ function ActiveGameCard({
           >
             {players
               .map((gp: any) => gp.users?.name ?? gp.guest_name ?? 'Player')
-              .join(' · ')}
+              .join(' \u00B7 ')}
           </Text>
         )}
 
@@ -643,6 +819,63 @@ function RecentGameCard({
 
 // ─── Styles ──────────────────────────────────────────────────────
 
+const chipStyles = StyleSheet.create({
+  chip: {
+    flex: 1,
+    height: 56,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+});
+
+const monthStyles = StyleSheet.create({
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    marginTop: 2,
+  },
+  divider: {
+    width: 1,
+    height: 32,
+  },
+  detailsRow: {
+    alignItems: 'flex-end',
+    marginTop: 12,
+  },
+  detailsText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+});
+
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
@@ -690,66 +923,27 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
 
-  // Hero
-  hero: {
-    alignItems: 'center',
-    paddingVertical: 28,
-    position: 'relative',
-  },
-  heroGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 16,
-  },
-  heroLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 6,
-  },
-  heroStats: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginTop: 6,
-  },
-
-  // Quick Stats
-  quickStatsRow: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    borderRadius: 14,
-    overflow: 'hidden',
+  // Status section
+  statusSection: {
+    paddingHorizontal: 20,
+    marginTop: 8,
     marginBottom: 20,
   },
-  quickStatItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 14,
+  statusText: {
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 22,
   },
-  quickStatValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+  ctaContainer: {
+    marginTop: 16,
   },
-  quickStatLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    marginTop: 2,
-  },
-  quickStatSublabel: {
-    fontSize: 10,
-    fontWeight: '400',
-    marginTop: 1,
-  },
-  quickStatDivider: {
-    width: 1,
-    marginVertical: 10,
+
+  // Quick actions
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
 
   // Sections

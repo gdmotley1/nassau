@@ -88,6 +88,7 @@ interface GameState {
   wins: number;
   losses: number;
   isLoading: boolean;
+  dashboardError: string | null;
 
   // Active game state (new)
   activeGameData: FullGameData | null;
@@ -152,6 +153,7 @@ interface GameState {
   // Lifetime stats
   lifetimeStats: LifetimeStats | null;
   lifetimeStatsLoading: boolean;
+  lifetimeStatsError: string | null;
   fetchLifetimeStats: (userId: string) => Promise<void>;
 
   // Real-time (new)
@@ -172,6 +174,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   wins: 0,
   losses: 0,
   isLoading: false,
+  dashboardError: null,
 
   // Active game state
   activeGameData: null,
@@ -183,11 +186,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Lifetime stats
   lifetimeStats: null,
   lifetimeStatsLoading: false,
+  lifetimeStatsError: null,
 
   // ─── Dashboard Actions (existing, unchanged) ────────────────
 
   fetchDashboardData: async (userId) => {
-    set({ isLoading: true });
+    set({ isLoading: true, dashboardError: null });
     try {
       const { data: activeGames } = await supabase
         .from('games')
@@ -300,7 +304,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         isLoading: false,
       });
     } catch {
-      set({ isLoading: false });
+      set({ isLoading: false, dashboardError: 'Unable to load your games. Pull down to refresh.' });
     }
   },
 
@@ -383,11 +387,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   // ─── Lifetime Stats ────────────────────────────────────────
 
   fetchLifetimeStats: async (userId) => {
-    set({ lifetimeStatsLoading: true });
+    set({ lifetimeStatsLoading: true, lifetimeStatsError: null });
 
     try {
-      // Parallel queries: games + settlements
-      const [gamesResult, settlementsResult] = await Promise.all([
+      // Parallel queries: games (completed + in-progress), settlements, and scores
+      const [gamesResult, settlementsResult, scoresResult, betsResult] = await Promise.all([
         supabase
           .from('games')
           .select(`
@@ -397,24 +401,32 @@ export const useGameStore = create<GameState>((set, get) => ({
               users (name)
             )
           `)
-          .eq('status', 'completed')
-          .order('completed_at', { ascending: true }),
+          .in('status', ['completed', 'in_progress'])
+          .order('created_at', { ascending: true }),
         supabase
           .from('settlements')
           .select('*')
           .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`),
+        supabase
+          .from('scores')
+          .select('*'),
+        supabase
+          .from('game_bets')
+          .select('*'),
       ]);
 
       const allGames = (gamesResult.data ?? []).filter((game: any) =>
         game.game_players.some((gp: any) => gp.user_id === userId),
       );
       const allSettlements = settlementsResult.data ?? [];
+      const allScores = scoresResult.data ?? [];
+      const allBets = betsResult.data ?? [];
 
       // Get member since from auth store
       const authUser = useAuthStore.getState().user;
       const memberSince = authUser?.created_at ?? new Date().toISOString();
 
-      // Build per-game net map
+      // Build per-game net map from settlements first
       const gameNetMap = new Map<string, number>();
       allSettlements.forEach((s: SettlementRow) => {
         const current = gameNetMap.get(s.game_id) ?? 0;
@@ -424,6 +436,76 @@ export const useGameStore = create<GameState>((set, get) => ({
           gameNetMap.set(s.game_id, current - s.amount);
         }
       });
+
+      // For games WITHOUT settlements, calculate net on-the-fly from scores
+      for (const game of allGames) {
+        if (gameNetMap.has(game.id)) continue; // Already has settlement data
+
+        const gameScores = allScores.filter((s: ScoreRow) => s.game_id === game.id);
+        if (gameScores.length === 0) continue; // No scores entered yet
+
+        const gameBets = allBets.filter((b: GameBetRow) => b.game_id === game.id);
+        const players = (game as any).game_players ?? [];
+
+        // Find the user's game_player_id
+        const userPlayer = players.find((gp: any) => gp.user_id === userId);
+        if (!userPlayer) continue;
+
+        try {
+          let calculatedSettlements: GameSettlementResult[] = [];
+          const gameType = (game as any).game_type as GameType;
+
+          switch (gameType) {
+            case 'nassau': {
+              calculatedSettlements = calculateNassauSettlements({
+                settings: (game as any).settings as NassauSettings & { type: string },
+                players,
+                bets: gameBets,
+                scores: gameScores,
+              });
+              break;
+            }
+            case 'skins': {
+              calculatedSettlements = calculateSkinsSettlements({
+                settings: (game as any).settings as SkinsSettings & { type: string },
+                players,
+                scores: gameScores,
+              });
+              break;
+            }
+            case 'match_play': {
+              calculatedSettlements = calculateMatchPlaySettlements({
+                settings: (game as any).settings as MatchPlaySettings & { type: string },
+                players,
+                bets: gameBets,
+                scores: gameScores,
+              });
+              break;
+            }
+            case 'wolf': {
+              calculatedSettlements = calculateWolfSettlements({
+                settings: (game as any).settings as WolfSettings & { type: string },
+                players,
+                scores: gameScores,
+                wolfChoices: [],
+              });
+              break;
+            }
+          }
+
+          // Sum net for this user from calculated settlements
+          let gameNet = 0;
+          for (const s of calculatedSettlements) {
+            if (s.toPlayerId === userPlayer.id) gameNet += s.amount;
+            if (s.fromPlayerId === userPlayer.id) gameNet -= s.amount;
+          }
+          if (gameNet !== 0) {
+            gameNetMap.set(game.id, gameNet);
+          }
+        } catch {
+          // If calculation fails (missing data, etc.), skip this game
+        }
+      }
 
       // ─ Monthly data points ─
       const monthMap = new Map<string, number>();
@@ -445,6 +527,19 @@ export const useGameStore = create<GameState>((set, get) => ({
         const label = `${monthNames[parseInt(m, 10) - 1]} '${year.slice(2)}`;
         return { month, label, cumulative, monthly };
       });
+
+      // Prepend a $0 origin point so the chart always has at least 2 points
+      // This gives the line a meaningful slope from zero to current P/L
+      if (monthlyData.length === 1) {
+        const first = monthlyData[0];
+        const [y, mo] = first.month.split('-').map(Number);
+        const prevMonth = mo === 1 ? 12 : mo - 1;
+        const prevYear = mo === 1 ? y - 1 : y;
+        const prevKey = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const prevLabel = `${monthNames[prevMonth - 1]} '${String(prevYear).slice(2)}`;
+        monthlyData.unshift({ month: prevKey, label: prevLabel, cumulative: 0, monthly: 0 });
+      }
 
       // ─ Game type breakdown ─
       const typeMap = new Map<GameType, { played: number; wins: number; losses: number; net: number }>();
@@ -597,7 +692,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         lifetimeStatsLoading: false,
       });
     } catch {
-      set({ lifetimeStatsLoading: false });
+      set({ lifetimeStatsLoading: false, lifetimeStatsError: 'Unable to load your stats.' });
     }
   },
 

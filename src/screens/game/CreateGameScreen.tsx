@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -23,6 +22,7 @@ import Animated, {
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
 import { useGameStore } from '../../stores/gameStore';
+import { useUIStore } from '../../stores/uiStore';
 import { useFriendStore } from '../../stores/friendStore';
 import {
   RHButton,
@@ -33,7 +33,7 @@ import {
   RHNumberStepper,
   EmptyState,
 } from '../../components';
-import { hapticLight, hapticMedium, hapticSuccess } from '../../utils/haptics';
+import { hapticLight, hapticMedium, hapticSuccess, hapticError } from '../../utils/haptics';
 import { formatHandicap } from '../../utils/format';
 import { springs } from '../../utils/animations';
 import { searchCourses, getCourseWithHoles, saveOrUpdateCourse, linkGameToCourse } from '../../services/courseService';
@@ -50,6 +50,7 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
   const theme = useTheme();
   const user = useAuthStore((s) => s.user);
   const createGame = useGameStore((s) => s.createGame);
+  const showToast = useUIStore((s) => s.showToast);
   const { friends, isLoading: friendsLoading, fetchFriends } = useFriendStore();
 
   const [step, setStep] = useState(0);
@@ -273,7 +274,8 @@ export function CreateGameScreen({ navigation }: NewGameStackScreenProps<'Create
     setIsCreating(false);
 
     if (result.error) {
-      Alert.alert('Error', result.error);
+      hapticError();
+      showToast(result.error, 'error');
       return;
     }
 

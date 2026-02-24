@@ -5,8 +5,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '../../hooks/useTheme';
 import { useGameStore } from '../../stores/gameStore';
 import { useAuthStore } from '../../stores/authStore';
+import { useUIStore } from '../../stores/uiStore';
 import { RHButton, RHCard, AceInsightCard } from '../../components';
-import { hapticSuccess } from '../../utils/haptics';
+import { hapticSuccess, hapticError } from '../../utils/haptics';
 import { formatPlayerName } from '../../utils/format';
 import { useAcePaywall } from '../../hooks/useAcePaywall';
 import { AcePremiumGate } from '../../components/AcePremiumGate';
@@ -26,6 +27,7 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
     cancelActiveGame,
   } = useGameStore();
 
+  const showToast = useUIStore((s) => s.showToast);
   const { isPremium, openPaywall } = useAcePaywall();
   const [matchups, setMatchups] = useState<HeadToHeadRecord[]>([]);
   const [scouting, setScouting] = useState<CourseScouting | null>(null);
@@ -69,7 +71,8 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
   const handleStart = async () => {
     const result = await startActiveGame();
     if (result.error) {
-      Alert.alert('Error', result.error);
+      hapticError();
+      showToast(result.error, 'error');
       return;
     }
     hapticSuccess();

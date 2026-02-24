@@ -23,6 +23,7 @@ import { RHCard } from '../../components/RHCard';
 import { RHMoneyDisplay } from '../../components/RHMoneyDisplay';
 import { RHLineChart } from '../../components/RHLineChart';
 import { EmptyState } from '../../components/EmptyState';
+import { RHErrorState } from '../../components/RHErrorState';
 import { ProfileStatsSkeleton } from '../../components/SkeletonLoader';
 import { GolfBackground } from '../../components/backgrounds';
 import {
@@ -53,6 +54,7 @@ export function ProfileScreen({ navigation }: ProfileStackScreenProps<'ProfileMa
   const signOut = useAuthStore((s) => s.signOut);
   const lifetimeStats = useGameStore((s) => s.lifetimeStats);
   const lifetimeStatsLoading = useGameStore((s) => s.lifetimeStatsLoading);
+  const lifetimeStatsError = useGameStore((s) => s.lifetimeStatsError);
   const fetchLifetimeStats = useGameStore((s) => s.fetchLifetimeStats);
   const showToast = useUIStore((s) => s.showToast);
   const { isPremium, openPaywall } = useAcePaywall();
@@ -176,6 +178,17 @@ export function ProfileScreen({ navigation }: ProfileStackScreenProps<'ProfileMa
       {/* ─── Loading State ─── */}
       {lifetimeStatsLoading && !stats && (
         <ProfileStatsSkeleton />
+      )}
+
+      {/* ─── Error State ─── */}
+      {!lifetimeStatsLoading && lifetimeStatsError && !stats && (
+        <RHErrorState
+          title="Couldn't load stats"
+          description={lifetimeStatsError}
+          onRetry={() => {
+            if (user?.id) fetchLifetimeStats(user.id);
+          }}
+        />
       )}
 
       {/* ─── Empty State (New User) ─── */}

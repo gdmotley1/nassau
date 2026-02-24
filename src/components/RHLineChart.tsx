@@ -28,7 +28,7 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 // ─── Time Range Filter ──────────────────────────────────────────
 
-export type TimeRange = '1M' | '3M' | '6M' | 'YTD' | '1Y' | 'ALL';
+export type TimeRange = '1W' | '1M' | '6M' | '1Y' | 'ALL';
 
 function filterDataByRange(data: MonthlyDataPoint[], range: TimeRange): MonthlyDataPoint[] {
   if (range === 'ALL' || data.length <= 2) return data;
@@ -37,17 +37,18 @@ function filterDataByRange(data: MonthlyDataPoint[], range: TimeRange): MonthlyD
   let cutoff: Date;
 
   switch (range) {
+    case '1W':
+      // Weekly view — show last 2 data points (current + previous)
+      // With monthly granularity this gives a clean slope for "this week"
+      if (data.length >= 2) {
+        return data.slice(-2);
+      }
+      return data;
     case '1M':
       cutoff = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       break;
-    case '3M':
-      cutoff = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-      break;
     case '6M':
       cutoff = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-      break;
-    case 'YTD':
-      cutoff = new Date(now.getFullYear(), 0, 1);
       break;
     case '1Y':
       cutoff = new Date(now.getFullYear() - 1, now.getMonth(), 1);
@@ -129,11 +130,13 @@ function TimeRangePill({
   isSelected,
   onPress,
   theme,
+  lineColor,
 }: {
   label: string;
   isSelected: boolean;
   onPress: () => void;
   theme: any;
+  lineColor: string;
 }) {
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
@@ -147,11 +150,6 @@ function TimeRangePill({
       onPress={onPress}
       style={[
         pillStyles.pill,
-        {
-          backgroundColor: isSelected
-            ? theme.semantic.textPrimary + '12'
-            : 'transparent',
-        },
         animatedStyle,
       ]}
     >
@@ -168,6 +166,15 @@ function TimeRangePill({
       >
         {label}
       </Text>
+      {/* Robinhood-style underline indicator */}
+      <View
+        style={[
+          pillStyles.underline,
+          {
+            backgroundColor: isSelected ? lineColor : 'transparent',
+          },
+        ]}
+      />
     </AnimatedPressable>
   );
 }
@@ -457,13 +464,14 @@ export function RHLineChart({
           entering={FadeIn.duration(400).delay(600)}
           style={pillStyles.row}
         >
-          {(['1M', '3M', '6M', 'YTD', '1Y', 'ALL'] as TimeRange[]).map((range) => (
+          {(['1W', '1M', '6M', '1Y', 'ALL'] as TimeRange[]).map((range) => (
             <TimeRangePill
               key={range}
               label={range}
               isSelected={timeRange === range}
               onPress={() => handleTimeRangeChange(range)}
               theme={theme}
+              lineColor={lineColor}
             />
           ))}
         </Animated.View>
@@ -483,17 +491,24 @@ const styles = StyleSheet.create({
 const pillStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 4,
-    paddingTop: 12,
+    justifyContent: 'space-evenly',
+    paddingTop: 16,
     paddingBottom: 4,
+    paddingHorizontal: 16,
   },
   pill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    alignItems: 'center',
   },
   pillText: {
-    fontSize: 12,
+    fontSize: 13,
+    letterSpacing: 0.2,
+  },
+  underline: {
+    height: 2,
+    width: '100%',
+    borderRadius: 1,
+    marginTop: 4,
   },
 });

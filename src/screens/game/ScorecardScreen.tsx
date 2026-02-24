@@ -25,7 +25,7 @@ import { useFriendStore } from '../../stores/friendStore';
 import { useUIStore } from '../../stores/uiStore';
 import { RHButton, RHBetStatusCard, RHScoreCell, RHPressIndicator, RHPlayerCard, AceInsightCard } from '../../components';
 import { HoleReactionOverlay } from '../../components/HoleReactionOverlay';
-import { hapticMedium, hapticSuccess, hapticLight, hapticWarning } from '../../utils/haptics';
+import { hapticMedium, hapticSuccess, hapticLight, hapticWarning, hapticError } from '../../utils/haptics';
 import { formatPlayerName, formatPlayerFirstName, formatHandicap } from '../../utils/format';
 import { getReactionType } from '../../utils/reactionMessages';
 import { springs } from '../../utils/animations';
@@ -235,7 +235,8 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
         onPress: async () => {
           const completeResult = await completeActiveGame();
           if (completeResult.error) {
-            Alert.alert('Error', completeResult.error);
+            hapticError();
+            showToast(completeResult.error, 'error');
             return;
           }
           await calculateAndCreateSettlements();
@@ -248,7 +249,8 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
 
   const handleEndEarly = () => {
     if (currentHole === 0) {
-      Alert.alert('No Scores', 'Enter at least one hole before ending the round.');
+      hapticError();
+      showToast('Enter at least one hole before ending the round.', 'error');
       return;
     }
 
@@ -264,7 +266,8 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
           onPress: async () => {
             const completeResult = await completeActiveGame();
             if (completeResult.error) {
-              Alert.alert('Error', completeResult.error);
+              hapticError();
+              showToast(completeResult.error, 'error');
               return;
             }
             await calculateAndCreateSettlements();

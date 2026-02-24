@@ -10,9 +10,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '../../hooks/useTheme';
-import { useAuthStore, useGameStore } from '../../stores';
+import { useAuthStore, useGameStore, useUIStore } from '../../stores';
 import { RHCard } from '../../components/RHCard';
 import { EmptyState } from '../../components/EmptyState';
+import { RHErrorState } from '../../components/RHErrorState';
+import { SwipeableGameCard } from '../../components/SwipeableGameCard';
 import { GameCardSkeleton } from '../../components/SkeletonLoader';
 import {
   formatGameType,
@@ -37,30 +39,39 @@ export function HistoryScreen({ navigation }: HistoryStackScreenProps<'HistoryLi
   const [gameNets, setGameNets] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [closeSignal, setCloseSignal] = useState(0);
+  const showToast = useUIStore((s) => s.showToast);
 
   const loadGames = useCallback(async () => {
     if (!user?.id) return;
-    const data = await fetchGameHistory(user.id, filter);
-    setGames(data);
+    setLoadError(null);
+    try {
+      const data = await fetchGameHistory(user.id, filter);
+      setGames(data);
 
-    // Fetch settlements for these games to compute net amounts
-    const gameIds = data.map((g: any) => g.id);
-    if (gameIds.length > 0) {
-      const { data: settlements } = await supabase
-        .from('settlements')
-        .select('*')
-        .in('game_id', gameIds);
+      // Fetch settlements for these games to compute net amounts
+      const gameIds = data.map((g: any) => g.id);
+      if (gameIds.length > 0) {
+        const { data: settlements } = await supabase
+          .from('settlements')
+          .select('*')
+          .in('game_id', gameIds);
 
-      const nets: Record<string, number> = {};
-      (settlements ?? []).forEach((s: SettlementRow) => {
-        const current = nets[s.game_id] ?? 0;
-        if (s.to_user_id === user.id) nets[s.game_id] = current + s.amount;
-        else if (s.from_user_id === user.id) nets[s.game_id] = current - s.amount;
-      });
-      setGameNets(nets);
+        const nets: Record<string, number> = {};
+        (settlements ?? []).forEach((s: SettlementRow) => {
+          const current = nets[s.game_id] ?? 0;
+          if (s.to_user_id === user.id) nets[s.game_id] = current + s.amount;
+          else if (s.from_user_id === user.id) nets[s.game_id] = current - s.amount;
+        });
+        setGameNets(nets);
+      }
+
+      setLoading(false);
+    } catch {
+      setLoading(false);
+      setLoadError('Unable to load game history.');
     }
-
-    setLoading(false);
   }, [user?.id, filter]);
 
   useEffect(() => {
@@ -146,6 +157,15 @@ export function HistoryScreen({ navigation }: HistoryStackScreenProps<'HistoryLi
             <GameCardSkeleton />
             <GameCardSkeleton />
           </>
+        ) : loadError ? (
+          <RHErrorState
+            title="Couldn't load history"
+            description={loadError}
+            onRetry={() => {
+              setLoading(true);
+              loadGames();
+            }}
+          />
         ) : games.length === 0 ? (
           <EmptyState
             title="No game history"
@@ -157,56 +177,81 @@ export function HistoryScreen({ navigation }: HistoryStackScreenProps<'HistoryLi
               key={game.id}
               entering={FadeInDown.duration(400).delay(index * 80)}
             >
-              <RHCard
-                onPress={() => {
-                  hapticLight();
-                  navigation.navigate('GameDetail', { gameId: game.id });
-                }}
-                style={styles.gameCard}
+              <SwipeableGameCard
+                closeSignal={closeSignal}
+                onOpen={() => setCloseSignal((s) => s + 1)}
+                actions={[
+                  {
+                    icon: 'eye',
+                    label: 'View',
+                    color: theme.colors.teal[500],
+                    onPress: () => {
+                      hapticLight();
+                      navigation.navigate('GameDetail', { gameId: game.id });
+                    },
+                  },
+                  {
+                    icon: 'share',
+                    label: 'Share',
+                    color: theme.colors.gray[500],
+                    onPress: () => {
+                      hapticLight();
+                      showToast('Sharing coming soon', 'info');
+                    },
+                  },
+                ]}
               >
-                <View style={styles.cardRow}>
-                  <View style={styles.cardLeft}>
+                <RHCard
+                  onPress={() => {
+                    hapticLight();
+                    navigation.navigate('GameDetail', { gameId: game.id });
+                  }}
+                  style={styles.gameCard}
+                >
+                  <View style={styles.cardRow}>
+                    <View style={styles.cardLeft}>
+                      <Text
+                        style={[
+                          styles.gameDate,
+                          { color: theme.semantic.textSecondary },
+                        ]}
+                      >
+                        {formatDateShort(game.completed_at ?? game.created_at)}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.gameType,
+                          { color: theme.semantic.textPrimary },
+                        ]}
+                      >
+                        {formatGameType(game.game_type)}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.gamePlayers,
+                          { color: theme.semantic.textSecondary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        You + {game.game_players.length - 1} others
+                      </Text>
+                    </View>
                     <Text
                       style={[
-                        styles.gameDate,
-                        { color: theme.semantic.textSecondary },
+                        styles.gameNet,
+                        {
+                          color:
+                            (gameNets[game.id] ?? 0) >= 0
+                              ? theme.colors.green[500]
+                              : theme.colors.red[500],
+                        },
                       ]}
                     >
-                      {formatDateShort(game.completed_at ?? game.created_at)}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.gameType,
-                        { color: theme.semantic.textPrimary },
-                      ]}
-                    >
-                      {formatGameType(game.game_type)}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.gamePlayers,
-                        { color: theme.semantic.textSecondary },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      You + {game.game_players.length - 1} others
+                      {formatMoneyShort(gameNets[game.id] ?? 0)}
                     </Text>
                   </View>
-                  <Text
-                    style={[
-                      styles.gameNet,
-                      {
-                        color:
-                          (gameNets[game.id] ?? 0) >= 0
-                            ? theme.colors.green[500]
-                            : theme.colors.red[500],
-                      },
-                    ]}
-                  >
-                    {formatMoneyShort(gameNets[game.id] ?? 0)}
-                  </Text>
-                </View>
-              </RHCard>
+                </RHCard>
+              </SwipeableGameCard>
             </Animated.View>
           ))
         )}
