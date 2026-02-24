@@ -207,121 +207,76 @@
       background: var(--teal); color: #000 !important;
     }
 
-    /* ─── Hero (Tesla-style) ─────────────────────────── */
+    /* ─── Hero ──────────────────────────────────────── */
     .hero {
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: center;
       text-align: center;
-      padding: 0 24px 60px;
+      padding: 80px 24px 60px;
       position: relative;
       overflow: hidden;
     }
 
     .hero-glow {
       position: absolute;
-      top: 20%;
+      top: -200px;
       left: 50%;
       transform: translateX(-50%);
-      width: 800px;
-      height: 800px;
+      width: 700px;
+      height: 700px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(0, 212, 170, 0.06), transparent 65%);
+      background: radial-gradient(circle, rgba(0, 212, 170, 0.12), transparent 70%);
       pointer-events: none;
     }
 
     .hero-content {
       position: relative;
-      max-width: 720px;
+      max-width: 680px;
       width: 100%;
     }
 
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: var(--teal-dim);
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      margin-bottom: 28px;
+      text-transform: uppercase;
+    }
+
     .hero h1 {
-      font-size: clamp(36px, 7vw, 42px);
-      font-weight: 600;
-      letter-spacing: -0.5px;
-      line-height: 1.15;
-      margin-bottom: 8px;
+      font-size: clamp(42px, 8vw, 64px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.05;
+      margin-bottom: 20px;
     }
 
     .hero h1 .accent { color: var(--teal); }
 
     .hero-subtitle {
-      font-size: 15px;
+      font-size: 19px;
       color: var(--text-secondary);
-      margin-bottom: 28px;
-      line-height: 1.5;
+      max-width: 500px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
     }
 
     .hero-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      align-items: stretch;
       max-width: 480px;
       margin: 0 auto;
     }
 
-    .hero-actions .waitlist-form {
-      flex: 1;
-      max-width: none;
-      margin: 0;
-    }
-
-    .hero-btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 14px 28px;
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text);
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 500;
-      transition: background 0.2s;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .hero-btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.12);
-      color: var(--text);
-      opacity: 1;
-    }
-
     .hero-sub {
-      margin-top: 20px;
-      font-size: 13px;
+      margin-top: 16px;
+      font-size: 14px;
       color: var(--text-tertiary);
-    }
-
-    .hero-scroll {
-      margin-top: 32px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .hero-scroll span {
-      font-size: 12px;
-      color: var(--text-tertiary);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .hero-scroll svg {
-      width: 20px; height: 20px;
-      stroke: var(--text-tertiary);
-      fill: none; stroke-width: 2;
-      animation: scrollBounce 2s ease-in-out infinite;
-    }
-
-    @keyframes scrollBounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(6px); }
     }
 
     /* ─── Problem Section ──────────────────────────── */
@@ -719,9 +674,6 @@
     @media (max-width: 768px) {
       .footer-grid { grid-template-columns: 1fr; gap: 32px; }
       .pro-card { padding: 40px 24px; }
-      .hero { padding-bottom: 40px; }
-      .hero h1 { font-size: 32px; }
-      .hero-actions { flex-direction: column; }
     }
 
     @media (max-width: 480px) {
@@ -913,19 +865,17 @@
   <section class="hero">
     <div class="hero-glow"></div>
     <div class="hero-content">
-      <h1 class="animate">Stop losing money<br>on the <span class="accent">golf course.</span></h1>
-      <p class="hero-subtitle animate animate-d1">Track bets. Settle up instantly. Press at the right time.</p>
-      <div class="hero-actions animate animate-d2">
+      <div class="hero-badge animate">Coming Soon to iOS</div>
+      <h1 class="animate animate-d1">Stop losing money<br>on the <span class="accent">golf course.</span></h1>
+      <p class="hero-subtitle animate animate-d2">Nassau tracks every bet, calculates every payout, and tells you exactly when to press. The golf betting app your group has been waiting for.</p>
+      <div class="hero-actions animate animate-d3">
         <form class="waitlist-form" id="hero-waitlist" onsubmit="handleWaitlist(event, 'hero')">
           <input type="email" placeholder="Enter your email" required autocomplete="email">
           <button type="submit">Join Waitlist</button>
         </form>
       </div>
-      <div class="waitlist-msg animate animate-d2" id="hero-msg"></div>
-      <p class="hero-sub animate animate-d3" id="hero-count"></p>
-      <div class="hero-scroll animate animate-d4">
-        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
+      <div class="waitlist-msg animate animate-d3" id="hero-msg"></div>
+      <p class="hero-sub animate animate-d4" id="hero-count"></p>
     </div>
   </section>
 
