@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { colors } from '../theme';
 import { useSubscriptionStore } from '../stores';
 import { springs } from '../utils/animations';
 import { hapticLight } from '../utils/haptics';
@@ -34,7 +35,7 @@ export function AcePremiumGate({
   return (
     <AceTeaser
       onUpgrade={onUpgrade}
-      teaserText={teaserText ?? 'Get AI-powered betting insights'}
+      teaserText={teaserText ?? 'Ace has something for you.'}
     />
   );
 }
@@ -68,25 +69,18 @@ function AceTeaser({
         style={[
           styles.teaserCard,
           {
-            backgroundColor: theme.semantic.card,
-            borderColor: theme.colors.teal[500] + '30',
+            backgroundColor: theme.isDark ? colors.dark.elevated : theme.semantic.card,
+            borderLeftColor: theme.colors.teal[500],
           },
           animatedStyle,
         ]}
       >
         <View style={styles.teaserHeader}>
-          <View
-            style={[
-              styles.aceBadge,
-              { backgroundColor: theme.colors.teal[500] + '18' },
-            ]}
+          <Text
+            style={[styles.aceLabel, { color: theme.colors.teal[500] }]}
           >
-            <Text
-              style={[styles.aceBadgeText, { color: theme.colors.teal[500] }]}
-            >
-              NASSAU PRO
-            </Text>
-          </View>
+            ACE
+          </Text>
           <Feather name="lock" size={14} color={theme.colors.teal[500]} />
         </View>
         <Text
@@ -103,7 +97,7 @@ function AceTeaser({
           <Text
             style={[styles.upgradeText, { color: theme.colors.teal[500] }]}
           >
-            Unlock with Nassau Pro
+            Unlock Ace
           </Text>
         </View>
       </AnimatedPressable>
@@ -114,7 +108,8 @@ function AceTeaser({
 const styles = StyleSheet.create({
   teaserCard: {
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0,
+    borderLeftWidth: 3,
     padding: 14,
     gap: 8,
   },
@@ -123,15 +118,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  aceBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  aceBadgeText: {
-    fontSize: 10,
+  aceLabel: {
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 1.2,
+    letterSpacing: 1.4,
   },
   teaserText: {
     fontSize: 14,

@@ -6,7 +6,7 @@ const RC_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? '';
 export const ENTITLEMENT_ID = 'Nassau Pro';
 
 // Toggle this to test premium UI in Expo Go (where native RC SDK is unavailable)
-export const DEV_PREMIUM_OVERRIDE = false;
+export const DEV_PREMIUM_OVERRIDE = true;
 
 // Lazy-load the SDK so Expo Go doesn't crash on import
 let Purchases: typeof import('react-native-purchases').default | null = null;

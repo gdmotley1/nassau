@@ -543,16 +543,16 @@ export function ScorecardScreen({ route, navigation }: HomeStackScreenProps<'Sco
             }
 
             const shouldPress = winRate >= 45;
-            const headline = shouldPress ? 'Press here' : 'Risky press';
+            const headline = shouldPress ? 'Press. You win these.' : 'Not this one.';
             const regionLabel = region === 'front' ? 'front 9'
               : region === 'back' ? 'back 9' : 'overall';
             const body = shouldPress
-              ? `You're ${margin}. Your ${regionLabel} press win rate is strong — the numbers favor pressing.`
-              : `You're ${margin}. Your press win rate in this region is below 45% — proceed with caution.`;
+              ? `You're ${margin}. ${winRate.toFixed(0)}% ${regionLabel} press win rate.`
+              : `You're ${margin}. ${winRate.toFixed(0)}% win rate in this region — below 45%.`;
 
             aceCard = (
               <View style={{ marginHorizontal: 12, marginBottom: 8 }}>
-                <AcePremiumGate onUpgrade={openPaywall} teaserText="Should you press? See your win rate data">
+                <AcePremiumGate onUpgrade={openPaywall} teaserText="Ace sees a press here.">
                   <AceInsightCard
                     variant="press"
                     headline={headline}

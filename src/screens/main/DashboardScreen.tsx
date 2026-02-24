@@ -342,17 +342,17 @@ export function DashboardScreen({ navigation }: Props) {
           >
             <AcePremiumGate
               onUpgrade={openPaywall}
-              teaserText="See head-to-head records and rival insights"
+              teaserText="Ace has a read on your rival."
             >
               <AceInsightCard
                 variant="matchup"
                 headline={`vs ${topRival.opponentName}`}
                 body={
                   topRival.totalNet > 0
-                    ? `You're up ${formatMoney(topRival.totalNet)} against ${topRival.opponentName} over ${topRival.gamesPlayed} games.`
+                    ? `Up ${formatMoney(topRival.totalNet)} over ${topRival.gamesPlayed} games.`
                     : topRival.totalNet < 0
-                      ? `${topRival.opponentName} has the edge — you're ${formatMoney(topRival.totalNet)} overall across ${topRival.gamesPlayed} games.`
-                      : `You and ${topRival.opponentName} are dead even after ${topRival.gamesPlayed} games.`
+                      ? `Down ${formatMoney(topRival.totalNet)} over ${topRival.gamesPlayed} games.`
+                      : `Dead even after ${topRival.gamesPlayed} games.`
                 }
                 stat={`${topRival.wins}-${topRival.losses}`}
                 statLabel="record"

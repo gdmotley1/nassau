@@ -21,6 +21,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useTheme } from '../hooks/useTheme';
+import { colors } from '../theme';
 import { springs } from '../utils/animations';
 import { hapticLight } from '../utils/haptics';
 
@@ -59,7 +60,6 @@ export function AceInsightCard({
   }));
 
   const accentColor = getAccentColor(variant, theme);
-  const icon = getIcon(variant);
 
   return (
     <Animated.View
@@ -68,24 +68,17 @@ export function AceInsightCard({
       style={[
         styles.container,
         {
-          backgroundColor: theme.semantic.card,
-          borderColor: accentColor + '30',
+          backgroundColor: theme.isDark ? colors.dark.elevated : theme.semantic.card,
+          borderLeftColor: theme.colors.teal[500],
         },
         animatedStyle,
       ]}
     >
-      {/* Header row: Ace badge + headline + dismiss */}
+      {/* Header row: headline + dismiss */}
       <View style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          <View style={[styles.aceBadge, { backgroundColor: accentColor + '18' }]}>
-            <Text style={[styles.aceBadgeText, { color: accentColor }]}>
-              {icon} ACE
-            </Text>
-          </View>
-          <Text style={[styles.headline, { color: theme.semantic.textPrimary }]}>
-            {headline}
-          </Text>
-        </View>
+        <Text style={[styles.headline, { color: theme.semantic.textPrimary }]}>
+          {headline}
+        </Text>
         {onDismiss && (
           <Pressable onPress={onDismiss} hitSlop={12}>
             <Text style={[styles.dismiss, { color: theme.semantic.textSecondary }]}>
@@ -165,24 +158,11 @@ function getAccentColor(variant: AceVariant, theme: any): string {
   }
 }
 
-function getIcon(variant: AceVariant): string {
-  // Using text characters since no emojis in UI
-  switch (variant) {
-    case 'press':
-      return ''; // clean, no icon
-    case 'matchup':
-      return '';
-    case 'postRound':
-      return '';
-    case 'insight':
-      return '';
-  }
-}
-
 const styles = StyleSheet.create({
   container: {
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0,
+    borderLeftWidth: 3,
     padding: 14,
     gap: 10,
   },
@@ -191,25 +171,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  aceBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  aceBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
   headline: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
+    letterSpacing: -0.2,
     flex: 1,
   },
   dismiss: {

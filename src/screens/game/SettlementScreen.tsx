@@ -293,7 +293,7 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
           <Animated.View entering={FadeInDown.duration(400).delay(600)}>
             <AcePremiumGate
               onUpgrade={openPaywall}
-              teaserText="See your round breakdown and missed press opportunities"
+              teaserText="Ace broke down this round."
             >
               {postRound && (
                 <>
@@ -302,7 +302,7 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
                   </Text>
                   <AceInsightCard
                     variant="postRound"
-                    headline="Round Recap"
+                    headline={`Shot ${postRound.scoreToPar >= 0 ? '+' : ''}${postRound.scoreToPar}`}
                     body={(() => {
                       const parts: string[] = [];
                       if (postRound.comparisonToAverage > 0) {
@@ -346,7 +346,7 @@ export function SettlementScreen({ route, navigation }: HomeStackScreenProps<'Se
           <Animated.View entering={FadeInDown.duration(400).delay(700)}>
             <AcePremiumGate
               onUpgrade={openPaywall}
-              teaserText="Replay every press decision from this round"
+              teaserText="Ace tracked every press."
             >
               {pressReplay && (
                 <>

@@ -363,7 +363,7 @@ export function ProfileScreen({ navigation }: ProfileStackScreenProps<'ProfileMa
           >
             <AcePremiumGate
               onUpgrade={openPaywall}
-              teaserText="See which opponents are most profitable for you"
+              teaserText="Ace ranked your opponents."
             >
               {matchupRecords.length > 0 && (
                 <>
@@ -397,7 +397,7 @@ export function ProfileScreen({ navigation }: ProfileStackScreenProps<'ProfileMa
           >
             <AcePremiumGate
               onUpgrade={openPaywall}
-              teaserText="Track your P/L leaderboard across your golf group"
+              teaserText="Ace tracks the leaderboard."
             >
               {leaderboard && leaderboard.entries.length > 0 && (
                 <>

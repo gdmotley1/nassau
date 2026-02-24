@@ -312,20 +312,20 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
           <Animated.View entering={FadeInDown.duration(400).delay(350)}>
             <AcePremiumGate
               onUpgrade={openPaywall}
-              teaserText="See your hole-by-hole stats at this course"
+              teaserText="Ace scouted this course."
             >
               {scouting && scouting.roundsPlayed > 0 && (
                 <>
                   <Text style={[styles.sectionLabel, { color: theme.semantic.textSecondary }]}>
-                    COURSE SCOUTING
+                    ACE SCOUTING REPORT
                   </Text>
                   <AceInsightCard
                     variant="insight"
-                    headline={`Your ${scouting.courseName} Report`}
+                    headline={`${scouting.courseName}. ${scouting.roundsPlayed} round${scouting.roundsPlayed !== 1 ? 's' : ''}.`}
                     body={
                       scouting.dangerHoles.length > 0
-                        ? `You've played here ${scouting.roundsPlayed} time${scouting.roundsPlayed !== 1 ? 's' : ''}. Watch out for hole${scouting.dangerHoles.length > 1 ? 's' : ''} ${scouting.dangerHoles.join(', ')}.`
-                        : `You've played here ${scouting.roundsPlayed} time${scouting.roundsPlayed !== 1 ? 's' : ''}. Solid play across the board.`
+                        ? `Watch hole${scouting.dangerHoles.length > 1 ? 's' : ''} ${scouting.dangerHoles.join(', ')}.`
+                        : `Solid play across the board.`
                     }
                     stat={scouting.averageScore.toFixed(0)}
                     statLabel="avg score"
@@ -389,22 +389,20 @@ export function GameLobbyScreen({ route, navigation }: HomeStackScreenProps<'Gam
           <Animated.View entering={FadeInDown.duration(400).delay(400)}>
             <AcePremiumGate
               onUpgrade={openPaywall}
-              teaserText="View your head-to-head record against every opponent"
+              teaserText="Ace knows this matchup."
             >
               {matchups.length > 0 && (
                 <>
                   <Text style={[styles.sectionLabel, { color: theme.semantic.textSecondary }]}>
-                    ACE INSIGHTS
+                    MATCHUP INTEL
                   </Text>
                   {matchups.map((record) => {
                     const isPositive = record.totalNet >= 0;
                     const body = record.gamesPlayed >= 3
-                      ? `You have a ${isPositive ? 'winning' : 'losing'} record against ${record.opponentName}. ${
-                          isPositive
-                            ? 'Keep the pressure on.'
-                            : 'Play smart — avoid early presses.'
-                        }`
-                      : `Limited history with ${record.opponentName}. Play your game and let the data build.`;
+                      ? isPositive
+                        ? `You own him. Keep pressing.`
+                        : `He has the edge. Play patient.`
+                      : `Limited data. Play your game.`;
 
                     const facts: string[] = [];
                     if (record.totalNet !== 0) {
