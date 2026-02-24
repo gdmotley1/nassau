@@ -849,6 +849,275 @@
     .social-links a:hover svg {
       fill: var(--teal);
     }
+
+    /* ─── Scroll Reveal Animations ──────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-d1 { transition-delay: 0.08s; }
+    .reveal-d2 { transition-delay: 0.16s; }
+    .reveal-d3 { transition-delay: 0.24s; }
+    .reveal-d4 { transition-delay: 0.32s; }
+    .reveal-d5 { transition-delay: 0.4s; }
+    .reveal-d6 { transition-delay: 0.48s; }
+
+    /* ─── Enhanced Card Hover (Glow + Lift) ──────────── */
+    .feature-card {
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  background 0.4s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0, 212, 170, 0.35);
+      box-shadow: 0 0 40px rgba(0, 212, 170, 0.07),
+                  0 8px 32px rgba(0, 0, 0, 0.4);
+      background: rgba(44, 44, 46, 0.8);
+    }
+
+    .problem-card {
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  background 0.4s;
+    }
+
+    .problem-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 80, 0, 0.25);
+      box-shadow: 0 0 30px rgba(255, 80, 0, 0.05),
+                  0 8px 24px rgba(0, 0, 0, 0.4);
+      background: rgba(44, 44, 46, 0.7);
+    }
+
+    .testimonial {
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .testimonial:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 215, 0, 0.2);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .step {
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step:hover {
+      transform: translateY(-4px);
+    }
+
+    .step-number {
+      transition: box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step:hover .step-number {
+      box-shadow: 0 0 24px rgba(0, 212, 170, 0.35);
+    }
+
+    /* ─── Glass-morphism Surfaces ────────────────────── */
+    .feature-card,
+    .problem-card,
+    .testimonial {
+      background: rgba(28, 28, 30, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .pro-card {
+      background: rgba(28, 28, 30, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-color: rgba(0, 212, 170, 0.15);
+      transition: border-color 0.4s;
+    }
+
+    .pro-card:hover {
+      border-color: rgba(0, 212, 170, 0.3);
+    }
+
+    /* ─── Ambient Floating Orbs ─────────────────────── */
+    .hero-orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(80px);
+    }
+
+    .hero-orb-1 {
+      width: 350px; height: 350px;
+      background: rgba(0, 212, 170, 0.12);
+      top: 15%; left: -8%;
+      animation: floatOrb1 22s ease-in-out infinite;
+    }
+
+    .hero-orb-2 {
+      width: 250px; height: 250px;
+      background: rgba(0, 200, 5, 0.07);
+      bottom: 10%; right: -5%;
+      animation: floatOrb2 28s ease-in-out infinite;
+    }
+
+    .hero-orb-3 {
+      width: 180px; height: 180px;
+      background: rgba(0, 212, 170, 0.06);
+      top: 55%; left: 65%;
+      animation: floatOrb3 18s ease-in-out infinite;
+    }
+
+    @keyframes floatOrb1 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(50px, -30px) scale(1.05); }
+      50% { transform: translate(20px, 20px) scale(0.95); }
+      75% { transform: translate(-30px, -10px) scale(1.02); }
+    }
+
+    @keyframes floatOrb2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(-40px, 25px) scale(1.03); }
+      50% { transform: translate(15px, -35px) scale(0.97); }
+      75% { transform: translate(-20px, -15px) scale(1.05); }
+    }
+
+    @keyframes floatOrb3 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, 40px) scale(1.08); }
+      66% { transform: translate(-40px, -20px) scale(0.92); }
+    }
+
+    /* ─── Section Divider Glow ──────────────────────── */
+    .features,
+    .how-it-works,
+    .pro-section,
+    .social-proof,
+    .cta-section {
+      border-top: 1px solid var(--border);
+      position: relative;
+    }
+
+    .features::before,
+    .pro-section::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 170, 0.4), transparent);
+    }
+
+    /* ─── Button & CTA Micro-interactions ────────────── */
+    .waitlist-form button {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.3s,
+                  opacity 0.2s;
+    }
+
+    .waitlist-form button:hover:not(:disabled) {
+      transform: scale(1.03);
+      box-shadow: 0 0 24px rgba(0, 212, 170, 0.25);
+      opacity: 1;
+    }
+
+    .waitlist-form button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .pro-cta {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.3s,
+                  opacity 0.2s;
+    }
+
+    .pro-cta:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 28px rgba(0, 212, 170, 0.3);
+      opacity: 1;
+    }
+
+    .pro-cta:active {
+      transform: scale(0.97);
+    }
+
+    .cta-button {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.3s,
+                  opacity 0.2s;
+    }
+
+    .cta-button:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 28px rgba(0, 212, 170, 0.3);
+      opacity: 1;
+    }
+
+    .cta-button:active {
+      transform: scale(0.97);
+    }
+
+    .nav-cta {
+      transition: background 0.2s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-cta:hover {
+      transform: scale(0.97);
+    }
+
+    .nav-links a {
+      transition: background 0.25s, color 0.25s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-links a:hover {
+      transform: scale(0.97);
+    }
+
+    /* ─── Waitlist Input Focus Glow ──────────────────── */
+    .waitlist-form input[type="email"]:focus {
+      box-shadow: 0 0 16px rgba(0, 212, 170, 0.15);
+    }
+
+    /* ─── Feature Icon Hover Lift ────────────────────── */
+    .feature-icon {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.3s;
+    }
+
+    .feature-card:hover .feature-icon {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 212, 170, 0.15);
+    }
+
+    /* ─── Social Link Hover Glow ─────────────────────── */
+    .social-links a {
+      transition: border-color 0.2s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.3s;
+    }
+
+    .social-links a:hover {
+      box-shadow: 0 0 16px rgba(0, 212, 170, 0.15);
+    }
+
+    /* ─── Reduce Motion ──────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { transition: none; opacity: 1; transform: none; }
+      .hero-orb { animation: none; }
+      .feature-card, .problem-card, .testimonial, .step { transition: none; }
+    }
   </style>
 
   <!-- Supabase JS Client (CDN) -->
@@ -888,6 +1157,9 @@
   <main id="main-content">
   <section class="hero">
     <div class="hero-glow"></div>
+    <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
+    <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
+    <div class="hero-orb hero-orb-3" aria-hidden="true"></div>
     <div class="hero-content">
       <div class="hero-badge animate">Coming Soon to iOS</div>
       <h1 class="animate animate-d1">Stop losing money<br>on the <span class="accent">golf course.</span></h1>
@@ -907,26 +1179,26 @@
   <!-- Problem Statement -->
   <section class="problem">
     <div class="container">
-      <div class="section-label">Sound Familiar?</div>
-      <h2 class="section-title">You're already betting.<br>You're just doing it badly.</h2>
-      <p class="section-subtitle">Scribbled scorecards, mental math, and "I'll Venmo you later" that never happens. Every round, money gets lost in the chaos.</p>
+      <div class="section-label reveal">Sound Familiar?</div>
+      <h2 class="section-title reveal reveal-d1">You're already betting.<br>You're just doing it badly.</h2>
+      <p class="section-subtitle reveal reveal-d2">Scribbled scorecards, mental math, and "I'll Venmo you later" that never happens. Every round, money gets lost in the chaos.</p>
 
       <div class="problem-grid">
-        <div class="problem-card">
+        <div class="problem-card reveal reveal-d1">
           <div class="problem-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </div>
           <h3>Bad math costs you money</h3>
           <p>Nassau bets with presses are complicated. Someone always miscalculates, and it's usually not in your favor.</p>
         </div>
-        <div class="problem-card">
+        <div class="problem-card reveal reveal-d2">
           <div class="problem-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="16" y2="12"/></svg>
           </div>
           <h3>Settlements never happen</h3>
           <p>Half the group forgets what they owe by the time you reach the parking lot. Money disappears into the void.</p>
         </div>
-        <div class="problem-card">
+        <div class="problem-card reveal reveal-d3">
           <div class="problem-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           </div>
@@ -940,47 +1212,47 @@
   <!-- Features (Solution) -->
   <section class="features" id="features">
     <div class="container">
-      <div class="section-label">The Fix</div>
-      <h2 class="section-title">Nassau handles the money.<br>You handle the golf.</h2>
-      <p class="section-subtitle">Every bet tracked. Every payout calculated. Every settlement one tap away.</p>
+      <div class="section-label reveal">The Fix</div>
+      <h2 class="section-title reveal reveal-d1">Nassau handles the money.<br>You handle the golf.</h2>
+      <p class="section-subtitle reveal reveal-d2">Every bet tracked. Every payout calculated. Every settlement one tap away.</p>
 
       <div class="features-grid">
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-d1">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           </div>
           <h3>Live Scorecard</h3>
           <p>Enter scores hole by hole. Bet standings update in real time across front 9, back 9, and overall 18.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-d2">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
           </div>
           <h3>Instant Settlements</h3>
           <p>Automatic payout calculations with one-tap Venmo links. No arguing, no mental math, no IOUs.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-d3">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
           </div>
           <h3>Press Bets</h3>
           <p>Press any region mid-round with configurable limits. Dollar amounts confirmed before every press.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-d4">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           </div>
           <h3>Friends System</h3>
           <p>Add friends by code, invite them with one tap, track head-to-head records across every round.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-d5">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
           <h3>P/L Tracking</h3>
           <p>See your profit and loss over time with interactive charts. Win rate, streaks, game type breakdown.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal reveal-d6">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           </div>
@@ -994,22 +1266,22 @@
   <!-- How It Works -->
   <section class="how-it-works" id="how-it-works">
     <div class="container">
-      <div class="section-label">How It Works</div>
-      <h2 class="section-title">Set up in 30 seconds.<br>Play for 4 hours.</h2>
-      <p class="section-subtitle">Three steps. That's it.</p>
+      <div class="section-label reveal">How It Works</div>
+      <h2 class="section-title reveal reveal-d1">Set up in 30 seconds.<br>Play for 4 hours.</h2>
+      <p class="section-subtitle reveal reveal-d2">Three steps. That's it.</p>
 
       <div class="steps">
-        <div class="step">
+        <div class="step reveal reveal-d1">
           <div class="step-number">1</div>
           <h3>Create a Game</h3>
           <p>Pick your bet type, set the stakes, invite friends, and select a course. Nassau loads the pars automatically.</p>
         </div>
-        <div class="step">
+        <div class="step reveal reveal-d2">
           <div class="step-number">2</div>
           <h3>Play and Score</h3>
           <p>Enter scores as you go. Nassau tracks every bet, every press, and every standing in real time.</p>
         </div>
-        <div class="step">
+        <div class="step reveal reveal-d3">
           <div class="step-number">3</div>
           <h3>Settle Up</h3>
           <p>Nassau calculates exactly what everyone owes. One-tap Venmo links. Money moves before you hit the bar.</p>
@@ -1021,7 +1293,7 @@
   <!-- Nassau Pro -->
   <section class="pro-section" id="pro">
     <div class="container">
-      <div class="pro-card">
+      <div class="pro-card reveal">
         <div class="pro-badge">NASSAU PRO</div>
         <h2>The app tracks your bets.<br>Pro helps you <em>win</em> them.</h2>
         <p>AI-powered analytics built from your real game data. Know when to press, who to target, and where you're leaving money on the table.</p>
@@ -1068,21 +1340,21 @@
   <!-- Social Proof -->
   <section class="social-proof">
     <div class="container">
-      <div class="section-label">From the Course</div>
-      <h2 class="section-title" style="margin-bottom: 40px;">Built by golfers who were<br>tired of bad math.</h2>
+      <div class="section-label reveal">From the Course</div>
+      <h2 class="section-title reveal reveal-d1" style="margin-bottom: 40px;">Built by golfers who were<br>tired of bad math.</h2>
 
       <div class="testimonials">
-        <div class="testimonial">
+        <div class="testimonial reveal reveal-d1">
           <div class="stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p>"We used to spend 10 minutes in the parking lot arguing about presses. Now it's one tap and we're at the bar."</p>
           <span class="author">Weekend foursome, Atlanta</span>
         </div>
-        <div class="testimonial">
+        <div class="testimonial reveal reveal-d2">
           <div class="stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p>"The press advisor alone pays for Pro. I used to press on gut feel. Now I know my actual win rate against each guy."</p>
           <span class="author">12-handicap, Peachtree City</span>
         </div>
-        <div class="testimonial">
+        <div class="testimonial reveal reveal-d3">
           <div class="stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p>"Finally an app that actually understands how golfers bet. Not some generic scorecard with a tip calculator."</p>
           <span class="author">Saturday morning group, Buckhead</span>
@@ -1094,9 +1366,9 @@
   <!-- CTA / Waitlist -->
   <section class="cta-section" id="waitlist">
     <div class="container">
-      <h2>Your group is leaving<br>money on the table.</h2>
-      <p>Join the waitlist. Be first to know when Nassau launches.</p>
-      <form class="waitlist-form" id="cta-waitlist" onsubmit="handleWaitlist(event, 'cta')">
+      <h2 class="reveal">Your group is leaving<br>money on the table.</h2>
+      <p class="reveal reveal-d1">Join the waitlist. Be first to know when Nassau launches.</p>
+      <form class="waitlist-form reveal reveal-d2" id="cta-waitlist" onsubmit="handleWaitlist(event, 'cta')">
         <label for="cta-email" class="sr-only">Email address</label>
         <input type="email" id="cta-email" placeholder="Enter your email" required autocomplete="email">
         <button type="submit">Join Waitlist</button>
@@ -1255,6 +1527,24 @@
         hamburger.setAttribute('aria-expanded', 'false');
         hamburger.setAttribute('aria-label', 'Open menu');
       });
+    });
+
+    // ─── Scroll Reveal (IntersectionObserver) ──────────
+    var revealElements = document.querySelectorAll('.reveal');
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.12,
+      rootMargin: '0px 0px -40px 0px'
+    });
+
+    revealElements.forEach(function(el) {
+      revealObserver.observe(el);
     });
   </script>
 
