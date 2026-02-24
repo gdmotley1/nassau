@@ -80,8 +80,8 @@
       --elevated: #2C2C2E;
       --border: #38383A;
       --text: #FFFFFF;
-      --text-secondary: #8E8E93;
-      --text-tertiary: #48484A;
+      --text-secondary: #A1A1A6;
+      --text-tertiary: #6E6E73;
     }
 
     html { scroll-behavior: smooth; }
@@ -697,6 +697,27 @@
     .animate-d4 { animation-delay: 0.4s; }
     .animate-d5 { animation-delay: 0.5s; }
 
+    /* ─── Accessibility ──────────────────────────────── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+
+    .skip-nav {
+      position: absolute; top: -100px; left: 16px;
+      background: var(--teal); color: #000;
+      padding: 12px 24px; border-radius: 8px;
+      font-weight: 600; font-size: 14px;
+      z-index: 200; transition: top 0.2s;
+    }
+
+    .skip-nav:focus {
+      top: 12px;
+      outline: 2px solid var(--text);
+      outline-offset: 2px;
+    }
+
     /* ─── Waitlist Form ──────────────────────────────── */
     .waitlist-form {
       display: flex;
@@ -835,8 +856,10 @@
 </head>
 <body>
 
+  <a href="#main-content" class="skip-nav">Skip to main content</a>
+
   <!-- Nav -->
-  <nav id="main-nav">
+  <nav id="main-nav" aria-label="Main navigation">
     <div class="container">
       <a href="/" class="nav-logo">nassau<span>.</span></a>
       <ul class="nav-links">
@@ -847,13 +870,13 @@
       </ul>
       <div class="nav-right">
         <a href="#waitlist" class="nav-cta">Join Waitlist</a>
-        <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')" aria-label="Open menu">
-          <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
       </div>
     </div>
   </nav>
-  <div class="mobile-menu">
+  <div class="mobile-menu" id="mobile-menu" role="navigation" aria-label="Mobile navigation">
     <a href="#features">Features</a>
     <a href="#how-it-works">How It Works</a>
     <a href="#pro">Nassau Pro</a>
@@ -862,6 +885,7 @@
   </div>
 
   <!-- Hero -->
+  <main id="main-content">
   <section class="hero">
     <div class="hero-glow"></div>
     <div class="hero-content">
@@ -870,7 +894,8 @@
       <p class="hero-subtitle animate animate-d2">Nassau tracks every bet, calculates every payout, and tells you exactly when to press. The golf betting app your group has been waiting for.</p>
       <div class="hero-actions animate animate-d3">
         <form class="waitlist-form" id="hero-waitlist" onsubmit="handleWaitlist(event, 'hero')">
-          <input type="email" placeholder="Enter your email" required autocomplete="email">
+          <label for="hero-email" class="sr-only">Email address</label>
+          <input type="email" id="hero-email" placeholder="Enter your email" required autocomplete="email">
           <button type="submit">Join Waitlist</button>
         </form>
       </div>
@@ -889,21 +914,21 @@
       <div class="problem-grid">
         <div class="problem-card">
           <div class="problem-icon">
-            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </div>
           <h3>Bad math costs you money</h3>
           <p>Nassau bets with presses are complicated. Someone always miscalculates, and it's usually not in your favor.</p>
         </div>
         <div class="problem-card">
           <div class="problem-icon">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="16" y2="12"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="16" y2="12"/></svg>
           </div>
           <h3>Settlements never happen</h3>
           <p>Half the group forgets what they owe by the time you reach the parking lot. Money disappears into the void.</p>
         </div>
         <div class="problem-card">
           <div class="problem-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           </div>
           <h3>You press at the wrong time</h3>
           <p>Gut feel is a terrible betting strategy. Without data, you're guessing when to double down and when to hold.</p>
@@ -922,42 +947,42 @@
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           </div>
           <h3>Live Scorecard</h3>
           <p>Enter scores hole by hole. Bet standings update in real time across front 9, back 9, and overall 18.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
           </div>
           <h3>Instant Settlements</h3>
           <p>Automatic payout calculations with one-tap Venmo links. No arguing, no mental math, no IOUs.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
           </div>
           <h3>Press Bets</h3>
           <p>Press any region mid-round with configurable limits. Dollar amounts confirmed before every press.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           </div>
           <h3>Friends System</h3>
           <p>Add friends by code, invite them with one tap, track head-to-head records across every round.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
           <h3>P/L Tracking</h3>
           <p>See your profit and loss over time with interactive charts. Win rate, streaks, game type breakdown.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           </div>
           <h3>Course Memory</h3>
           <p>Save course pars once and they auto-fill forever. Courses pre-loaded. Smart autocomplete.</p>
@@ -1048,17 +1073,17 @@
 
       <div class="testimonials">
         <div class="testimonial">
-          <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <div class="stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p>"We used to spend 10 minutes in the parking lot arguing about presses. Now it's one tap and we're at the bar."</p>
           <span class="author">Weekend foursome, Atlanta</span>
         </div>
         <div class="testimonial">
-          <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <div class="stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p>"The press advisor alone pays for Pro. I used to press on gut feel. Now I know my actual win rate against each guy."</p>
           <span class="author">12-handicap, Peachtree City</span>
         </div>
         <div class="testimonial">
-          <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <div class="stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <p>"Finally an app that actually understands how golfers bet. Not some generic scorecard with a tip calculator."</p>
           <span class="author">Saturday morning group, Buckhead</span>
         </div>
@@ -1072,13 +1097,16 @@
       <h2>Your group is leaving<br>money on the table.</h2>
       <p>Join the waitlist. Be first to know when Nassau launches.</p>
       <form class="waitlist-form" id="cta-waitlist" onsubmit="handleWaitlist(event, 'cta')">
-        <input type="email" placeholder="Enter your email" required autocomplete="email">
+        <label for="cta-email" class="sr-only">Email address</label>
+        <input type="email" id="cta-email" placeholder="Enter your email" required autocomplete="email">
         <button type="submit">Join Waitlist</button>
       </form>
       <div class="waitlist-msg" id="cta-msg"></div>
       <p class="cta-note" id="cta-count"></p>
     </div>
   </section>
+
+  </main>
 
   <!-- Footer -->
   <footer>
@@ -1089,13 +1117,13 @@
           <p>Track bets, settle up instantly, and get AI-powered insights. The smartest way to bet on the golf course.</p>
           <div class="social-links">
             <a href="https://tiktok.com/@nassauapp" target="_blank" rel="noopener" aria-label="TikTok">
-              <svg viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.52a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.73a8.19 8.19 0 004.76 1.52v-3.4a4.85 4.85 0 01-1-.16z"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.52a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.73a8.19 8.19 0 004.76 1.52v-3.4a4.85 4.85 0 01-1-.16z"/></svg>
             </a>
             <a href="https://instagram.com/nassauapp" target="_blank" rel="noopener" aria-label="Instagram">
-              <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.5"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.5"/></svg>
             </a>
             <a href="https://x.com/nassauapp" target="_blank" rel="noopener" aria-label="X">
-              <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             </a>
           </div>
         </div>
@@ -1211,10 +1239,21 @@
       }
     });
 
-    // Close mobile menu on link click
+    // Close mobile menu on link click + sync aria-expanded
+    var hamburger = document.querySelector('.hamburger');
+    var mobileMenu = document.querySelector('.mobile-menu');
+
+    hamburger.addEventListener('click', function() {
+      var isOpen = mobileMenu.classList.contains('open');
+      hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      hamburger.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+    });
+
     document.querySelectorAll('.mobile-menu a').forEach(function(link) {
       link.addEventListener('click', function() {
-        document.querySelector('.mobile-menu').classList.remove('open');
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        hamburger.setAttribute('aria-label', 'Open menu');
       });
     });
   </script>
