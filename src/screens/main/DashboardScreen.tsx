@@ -20,6 +20,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore, useGameStore, useUIStore } from '../../stores';
 import { RHCard } from '../../components/RHCard';
 import { RHButton } from '../../components/RHButton';
+import { RHMoneyDisplay } from '../../components/RHMoneyDisplay';
 import { AceInsightCard } from '../../components/AceInsightCard';
 import { EmptyState } from '../../components/EmptyState';
 import { RHErrorState } from '../../components/RHErrorState';
@@ -92,7 +93,7 @@ export function DashboardScreen({ navigation }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
-  const { activeGames, activeGameScores, recentGames, recentGameNets, monthlyNet, wins, losses, isLoading, dashboardError, fetchDashboardData } =
+  const { activeGames, activeGameScores, recentGames, recentGameNets, monthlyNet, wins, losses, isLoading, dashboardError, fetchDashboardData, lifetimeStats, fetchLifetimeStats } =
     useGameStore();
   const showToast = useUIStore((s) => s.showToast);
 
@@ -106,6 +107,7 @@ export function DashboardScreen({ navigation }: Props) {
   useEffect(() => {
     if (user?.id) {
       fetchDashboardData(user.id);
+      fetchLifetimeStats(user.id);
       if (isPremium) {
         getScoringTrends(user.id).then((res) => {
           if (res.data) setScoringTrends(res.data);
@@ -125,6 +127,7 @@ export function DashboardScreen({ navigation }: Props) {
     setRefreshing(true);
     setAceDismissed(false);
     await fetchDashboardData(user.id);
+    fetchLifetimeStats(user.id);
     if (isPremium) {
       getScoringTrends(user.id).then((res) => {
         if (res.data) setScoringTrends(res.data);
@@ -143,6 +146,10 @@ export function DashboardScreen({ navigation }: Props) {
   const firstName = user?.name ? getFirstName(user.name) : '';
   const hasActiveGames = activeGames.length > 0;
   const statusMessage = getStatusMessage(activeGames, totalGames);
+
+  const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+  const streak = lifetimeStats?.currentStreak;
+  const streakColor = streak?.type === 'win' ? theme.colors.green[500] : theme.colors.red[500];
 
   // Form indicator badge
   const formBadge = scoringTrends?.formIndicator;
@@ -175,61 +182,83 @@ export function DashboardScreen({ navigation }: Props) {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* ─── Header: Greeting + Form Badge ─── */}
-        <Animated.View
-          entering={FadeIn.duration(400)}
-          style={styles.header}
-        >
-          <View>
-            <Text style={[styles.greeting, { color: theme.semantic.textSecondary }]}>
-              {getGreeting()}
-            </Text>
-            <Text style={[styles.userName, { color: theme.semantic.textPrimary }]}>
-              {firstName}
-            </Text>
-          </View>
-          {isPremium && scoringTrends && totalGames >= 3 && (
-            <View style={[styles.formBadge, { backgroundColor: formColor + '18' }]}>
-              <View style={[styles.formDot, { backgroundColor: formColor }]} />
-              <Text style={[styles.formText, { color: formColor }]}>
-                {formLabel}
-              </Text>
-            </View>
-          )}
-        </Animated.View>
-
-        {/* ─── Status Line + CTA ─── */}
+        {/* ─── Hero Section ─── */}
         {isLoading && !refreshing ? (
           <DashboardWelcomeSkeleton />
         ) : (
           <Animated.View
-            entering={FadeInDown.duration(500).delay(100)}
-            style={styles.statusSection}
+            entering={FadeIn.duration(400)}
+            style={styles.heroSection}
           >
-            <Text
-              style={[
-                styles.statusText,
-                {
-                  color: statusMessage.isTeal
-                    ? theme.colors.teal[500]
-                    : theme.semantic.textSecondary,
-                },
-              ]}
-            >
-              {statusMessage.text}
-            </Text>
-            {!hasActiveGames && (
-              <View style={styles.ctaContainer}>
-                <RHButton
-                  title="Start a Game"
-                  variant="primary"
-                  onPress={() => {
-                    hapticLight();
-                    navigation.navigate('NewGameTab' as any);
-                  }}
-                />
-              </View>
+            {/* Top row: greeting + form badge */}
+            <View style={styles.heroTopRow}>
+              <Text style={[styles.greeting, { color: theme.semantic.textSecondary }]}>
+                {getGreeting()}, {firstName}
+              </Text>
+              {isPremium && scoringTrends && totalGames >= 3 && (
+                <View style={[styles.formBadge, { backgroundColor: formColor + '18' }]}>
+                  <View style={[styles.formDot, { backgroundColor: formColor }]} />
+                  <Text style={[styles.formText, { color: formColor }]}>
+                    {formLabel}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* BIG money number */}
+            <Animated.View entering={FadeInDown.duration(600).delay(100)}>
+              <RHMoneyDisplay amount={monthlyNet} size="large" />
+              <Text style={[styles.heroLabel, { color: theme.semantic.textSecondary }]}>
+                This month
+              </Text>
+            </Animated.View>
+
+            {/* Stat strip */}
+            {totalGames > 0 && (
+              <Animated.View
+                entering={FadeInDown.duration(500).delay(200)}
+                style={styles.statStrip}
+              >
+                <StatPill label={`${wins}-${losses}`} sublabel="Record" theme={theme} />
+                <StatPill label={`${totalGames}`} sublabel="Games" theme={theme} />
+                <StatPill label={`${winRate}%`} sublabel="Win" theme={theme} />
+                {streak && streak.count >= 2 && (
+                  <View style={[styles.streakBadge, { backgroundColor: streakColor + '18' }]}>
+                    <Text style={[styles.streakText, { color: streakColor }]}>
+                      {streak.count}{streak.type === 'win' ? 'W' : 'L'}
+                    </Text>
+                  </View>
+                )}
+              </Animated.View>
             )}
+
+            {/* Status line + CTA */}
+            <Animated.View entering={FadeInDown.duration(500).delay(300)}>
+              <Text
+                style={[
+                  styles.statusText,
+                  {
+                    color: statusMessage.isTeal
+                      ? theme.colors.teal[500]
+                      : theme.semantic.textSecondary,
+                  },
+                ]}
+              >
+                {statusMessage.text}
+              </Text>
+              {!hasActiveGames && (
+                <View style={styles.ctaContainer}>
+                  <RHButton
+                    title="Start a Game"
+                    variant="primary"
+                    onPress={() => {
+                      hapticLight();
+                      navigation.navigate('NewGameTab' as any);
+                    }}
+                  />
+                </View>
+              )}
+            </Animated.View>
           </Animated.View>
         )}
 
@@ -310,29 +339,6 @@ export function DashboardScreen({ navigation }: Props) {
             theme={theme}
           />
         </Animated.View>
-
-        {/* ─── This Month Summary ─── */}
-        {totalGames > 0 && (
-          <Animated.View
-            entering={FadeInDown.duration(500).delay(350)}
-            style={styles.section}
-          >
-            <MonthSummaryCard
-              monthlyNet={monthlyNet}
-              wins={wins}
-              losses={losses}
-              totalGames={totalGames}
-              theme={theme}
-              onPress={() => {
-                hapticLight();
-                const parent = navigation.getParent();
-                if (parent) {
-                  parent.navigate('ProfileTab', { screen: 'ProfileMain' });
-                }
-              }}
-            />
-          </Animated.View>
-        )}
 
         {/* ─── Ace Rival Insight ─── */}
         {topRival && topRival.gamesPlayed >= 2 && !aceDismissed && (
@@ -495,78 +501,58 @@ function QuickActionChip({
   );
 }
 
-/** This Month summary card — compact P/L + record + games */
-function MonthSummaryCard({
-  monthlyNet,
-  wins: w,
-  losses: l,
-  totalGames,
+/** Compact stat pill for the hero stat strip */
+function StatPill({
+  label,
+  sublabel,
   theme,
-  onPress,
 }: {
-  monthlyNet: number;
-  wins: number;
-  losses: number;
-  totalGames: number;
+  label: string;
+  sublabel: string;
   theme: any;
-  onPress: () => void;
 }) {
-  const netColor = monthlyNet > 0
-    ? theme.colors.green[500]
-    : monthlyNet < 0
-      ? theme.colors.red[500]
-      : theme.semantic.textSecondary;
-
   return (
-    <RHCard onPress={onPress}>
-      <Text style={[monthStyles.cardLabel, { color: theme.semantic.textSecondary }]}>
-        THIS MONTH
+    <View
+      style={[
+        pillStyles.pill,
+        {
+          backgroundColor: theme.semantic.card,
+          borderColor: theme.semantic.border,
+        },
+      ]}
+    >
+      <Text style={[pillStyles.pillLabel, { color: theme.semantic.textPrimary }]}>
+        {label}
       </Text>
-      <View style={monthStyles.row}>
-        {/* Net P/L */}
-        <View style={monthStyles.statColumn}>
-          <Text style={[monthStyles.statValue, { color: netColor }]}>
-            {formatMoneyShort(monthlyNet)}
-          </Text>
-          <Text style={[monthStyles.statLabel, { color: theme.semantic.textSecondary }]}>
-            Net
-          </Text>
-        </View>
-
-        <View style={[monthStyles.divider, { backgroundColor: theme.semantic.border }]} />
-
-        {/* Record */}
-        <View style={monthStyles.statColumn}>
-          <Text style={[monthStyles.statValue, { color: theme.semantic.textPrimary }]}>
-            {w}-{l}
-          </Text>
-          <Text style={[monthStyles.statLabel, { color: theme.semantic.textSecondary }]}>
-            Record
-          </Text>
-        </View>
-
-        <View style={[monthStyles.divider, { backgroundColor: theme.semantic.border }]} />
-
-        {/* Games */}
-        <View style={monthStyles.statColumn}>
-          <Text style={[monthStyles.statValue, { color: theme.semantic.textPrimary }]}>
-            {totalGames}
-          </Text>
-          <Text style={[monthStyles.statLabel, { color: theme.semantic.textSecondary }]}>
-            Games
-          </Text>
-        </View>
-      </View>
-
-      {/* See details hint */}
-      <View style={monthStyles.detailsRow}>
-        <Text style={[monthStyles.detailsText, { color: theme.colors.teal[500] }]}>
-          See full stats {'\u203A'}
-        </Text>
-      </View>
-    </RHCard>
+      <Text style={[pillStyles.pillSublabel, { color: theme.semantic.textSecondary }]}>
+        {sublabel}
+      </Text>
+    </View>
   );
 }
+
+const pillStyles = StyleSheet.create({
+  pill: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  pillLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  pillSublabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    marginTop: 1,
+  },
+});
+
 
 /** Tiny score cell for dashboard mini-scorecard */
 function MiniScoreCell({ strokes, par, theme }: { strokes: number | null; par: number; theme: any }) {
@@ -835,46 +821,6 @@ const chipStyles = StyleSheet.create({
   },
 });
 
-const monthStyles = StyleSheet.create({
-  cardLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statColumn: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    marginTop: 2,
-  },
-  divider: {
-    width: 1,
-    height: 32,
-  },
-  detailsRow: {
-    alignItems: 'flex-end',
-    marginTop: 12,
-  },
-  detailsText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-});
 
 const styles = StyleSheet.create({
   outerContainer: {
@@ -884,24 +830,43 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Header
-  header: {
+  // Hero
+  heroSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  heroTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 20,
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   greeting: {
     fontSize: 14,
     fontWeight: '500',
     letterSpacing: 0.2,
   },
-  userName: {
-    fontSize: 28,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+  heroLabel: {
+    fontSize: 13,
+    fontWeight: '500',
     marginTop: 2,
+  },
+  statStrip: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 20,
+  },
+  streakBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakText: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   formBadge: {
     flexDirection: 'row',
@@ -910,7 +875,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
     gap: 5,
-    marginTop: 8,
   },
   formDot: {
     width: 6,
@@ -922,17 +886,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.2,
   },
-
-  // Status section
-  statusSection: {
-    paddingHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 20,
-  },
   statusText: {
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
+    marginTop: 20,
   },
   ctaContainer: {
     marginTop: 16,
