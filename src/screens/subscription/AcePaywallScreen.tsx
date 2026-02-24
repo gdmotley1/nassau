@@ -27,22 +27,27 @@ const FEATURES = [
   {
     icon: 'trending-up' as const,
     title: 'Press Advisor',
-    desc: 'Know exactly when to press with historical win rate data',
+    desc: 'Real-time win rate data tells you exactly when to press',
+  },
+  {
+    icon: 'map-pin' as const,
+    title: 'Course Scouting',
+    desc: 'Hole-by-hole scouting report with danger zones before you tee off',
   },
   {
     icon: 'users' as const,
     title: 'Matchup Intel',
-    desc: 'Head-to-head records and opponent tendencies',
+    desc: 'Head-to-head records and tendencies for every opponent',
   },
   {
-    icon: 'bar-chart-2' as const,
-    title: 'Round Analysis',
-    desc: 'Post-round breakdown and missed press opportunities',
+    icon: 'target' as const,
+    title: 'Opponent Rankings',
+    desc: 'See which friends are most profitable to play against',
   },
   {
-    icon: 'zap' as const,
-    title: 'Form Tracker',
-    desc: 'Scoring trends, streaks, and handicap trajectory',
+    icon: 'award' as const,
+    title: 'Group Leaderboard',
+    desc: 'Season P/L rankings across your entire golf group',
   },
 ];
 
@@ -230,7 +235,7 @@ export function AcePaywallScreen({ navigation }: Props) {
 
             <Animated.View entering={FadeInDown.duration(500).delay(300)}>
               <Text style={[styles.subheadline, { color: theme.colors.gray[500] }]}>
-                AI-powered insights that help you win more bets
+                The edge your group doesn't know you have
               </Text>
             </Animated.View>
           </Animated.View>
