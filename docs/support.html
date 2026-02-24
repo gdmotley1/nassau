@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Support - Nassau Golf Betting App</title>
   <meta name="description" content="Get help with Nassau, the golf betting app. FAQ, account support, subscription management, and contact information.">
+  <meta name="keywords" content="nassau support, golf betting app help, nassau faq, nassau contact, nassau subscription help">
   <link rel="canonical" href="https://nassauapp.com/support.html">
   <meta property="og:title" content="Support - Nassau">
   <meta property="og:description" content="FAQ, account help, and contact info for Nassau.">
@@ -12,6 +13,9 @@
   <meta property="og:url" content="https://nassauapp.com/support.html">
   <meta property="og:site_name" content="Nassau">
   <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Support - Nassau">
+  <meta name="twitter:description" content="FAQ, account help, and contact info for Nassau.">
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19,22 +23,28 @@
     :root {
       --teal: #00D4AA;
       --teal-dim: rgba(0, 212, 170, 0.12);
+      --green: #00C805;
+      --red: #FF5000;
       --bg: #000000;
       --card: #1C1C1E;
+      --elevated: #2C2C2E;
       --border: #38383A;
       --text: #FFFFFF;
       --text-secondary: #A1A1A6;
       --text-tertiary: #6E6E73;
     }
 
+    html { scroll-behavior: smooth; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg); color: var(--text); line-height: 1.7;
+      background: var(--bg); color: var(--text); line-height: 1.5;
       -webkit-font-smoothing: antialiased;
     }
 
     a { color: var(--teal); text-decoration: none; }
     a:hover { opacity: 0.85; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
     /* ─── Nav ───────────────────────────────────────── */
     nav {
@@ -44,7 +54,6 @@
       border-bottom: 1px solid rgba(56, 56, 58, 0.5);
     }
     nav .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
-    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
     .nav-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
     .nav-logo span { color: var(--teal); }
     .nav-links { display: flex; gap: 32px; list-style: none; }
@@ -76,31 +85,207 @@
       .hamburger { display: block; }
     }
 
-    /* ─── Content ──────────────────────────────────── */
-    .page-content {
-      max-width: 680px; margin: 0 auto; padding: 120px 24px 80px;
+    /* ─── Page Hero ─────────────────────────────────── */
+    .page-hero {
+      padding: 140px 24px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
     }
 
-    h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
-    .subtitle { font-size: 15px; color: var(--text-secondary); margin-bottom: 32px; }
-    h2 { font-size: 20px; font-weight: 700; margin-top: 32px; margin-bottom: 12px; }
-    p, li { font-size: 15px; color: #D1D1D6; margin-bottom: 12px; }
+    .page-hero-glow {
+      position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 212, 170, 0.08), transparent 70%);
+      pointer-events: none;
+    }
+
+    .page-hero .section-label {
+      font-size: 12px; font-weight: 700; letter-spacing: 2.5px;
+      color: var(--teal); text-transform: uppercase; margin-bottom: 16px;
+      position: relative;
+    }
+
+    .page-hero h1 {
+      font-size: clamp(32px, 6vw, 48px); font-weight: 800;
+      letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px;
+      position: relative;
+    }
+
+    .page-hero p {
+      font-size: 18px; color: var(--text-secondary); max-width: 540px;
+      margin: 0 auto; line-height: 1.6; position: relative;
+    }
+
+    /* ─── FAQ Sections ─────────────────────────────── */
+    .faq-section { padding: 20px 0 80px; }
+
+    .faq-group {
+      max-width: 720px; margin: 0 auto 48px;
+    }
+
+    .faq-group-header {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 20px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .faq-group-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--teal-dim); display: flex;
+      align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .faq-group-icon svg {
+      width: 20px; height: 20px; stroke: var(--teal);
+      fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .faq-group-header h2 {
+      font-size: 20px; font-weight: 700; letter-spacing: -0.3px;
+    }
+
+    /* ─── Accordion Items ──────────────────────────── */
+    .faq-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .faq-item:hover {
+      border-color: rgba(0, 212, 170, 0.2);
+    }
+
+    .faq-item.open {
+      border-color: rgba(0, 212, 170, 0.3);
+      box-shadow: 0 0 20px rgba(0, 212, 170, 0.05);
+    }
+
+    .faq-question {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px;
+      cursor: pointer;
+      -webkit-user-select: none; user-select: none;
+      transition: background 0.2s;
+    }
+
+    .faq-question:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .faq-question h3 {
+      font-size: 16px; font-weight: 600; letter-spacing: -0.2px;
+      line-height: 1.4; padding-right: 16px;
+    }
+
+    .faq-chevron {
+      width: 20px; height: 20px; flex-shrink: 0;
+      stroke: var(--text-secondary); fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.2s;
+    }
+
+    .faq-item.open .faq-chevron {
+      transform: rotate(180deg);
+      stroke: var(--teal);
+    }
+
+    .faq-answer-wrapper {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .faq-answer {
+      padding: 0 24px 22px;
+      border-top: 1px solid var(--border);
+    }
+
+    .faq-answer p {
+      font-size: 15px; color: var(--text-secondary);
+      line-height: 1.7; padding-top: 18px;
+    }
+
+    .faq-answer p + p {
+      margin-top: 10px; padding-top: 0;
+    }
+
+    .faq-answer a {
+      font-weight: 500;
+    }
+
+    .faq-answer code {
+      background: var(--elevated); padding: 2px 8px;
+      border-radius: 5px; font-size: 13px; color: var(--teal);
+    }
+
+    /* ─── Contact Section ──────────────────────────── */
+    .contact-section {
+      padding: 60px 0 100px;
+      border-top: 1px solid var(--border);
+    }
+
+    .contact-grid {
+      max-width: 720px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
 
     .contact-card {
-      background: var(--card); border-radius: 12px; padding: 24px;
-      margin-top: 24px; border: 1px solid var(--border);
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px;
+      transition: transform 0.3s, border-color 0.3s;
     }
-    .contact-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
 
-    .email-link {
-      display: inline-block; padding: 12px 24px; background: var(--teal);
-      color: #000; border-radius: 10px; font-weight: 600; font-size: 15px;
-      margin-top: 12px; transition: transform 0.2s;
+    .contact-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(0, 212, 170, 0.3);
     }
-    .email-link:hover { transform: scale(0.97); text-decoration: none; }
 
-    .faq-item { margin-bottom: 20px; }
-    .faq-item strong { color: var(--text); font-size: 15px; display: block; margin-bottom: 4px; }
+    .contact-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--teal-dim); display: flex;
+      align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+    .contact-icon svg {
+      width: 22px; height: 22px; stroke: var(--teal);
+      fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .contact-card h3 {
+      font-size: 18px; font-weight: 700; margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+
+    .contact-card p {
+      font-size: 14px; color: var(--text-secondary);
+      line-height: 1.6; margin-bottom: 20px;
+    }
+
+    .contact-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; background: var(--teal); color: #000;
+      border-radius: 10px; font-weight: 600; font-size: 14px;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .contact-link:hover { transform: scale(0.97); opacity: 0.9; text-decoration: none; }
+    .contact-link svg {
+      width: 16px; height: 16px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .contact-card-alt .contact-link {
+      background: rgba(255, 255, 255, 0.08); color: var(--text);
+    }
+    .contact-card-alt .contact-link:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    @media (max-width: 600px) {
+      .contact-grid { grid-template-columns: 1fr; }
+    }
 
     /* ─── Footer ────────────────────────────────────── */
     footer { border-top: 1px solid var(--border); padding: 48px 0; }
@@ -118,6 +303,34 @@
 
     @media (max-width: 768px) {
       .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    }
+
+    /* ─── Animations ───────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate { opacity: 0; animation: fadeUp 0.6s ease-out forwards; }
+    .animate-d1 { animation-delay: 0.1s; }
+    .animate-d2 { animation-delay: 0.2s; }
+    .animate-d3 { animation-delay: 0.3s; }
+
+    .reveal {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ─── Reduced Motion ──────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+      .reveal { opacity: 1; transform: none; }
+      .animate { opacity: 1; transform: none; }
+      .faq-answer-wrapper { transition-duration: 0.01ms !important; }
+      .faq-chevron { transition-duration: 0.01ms !important; }
     }
   </style>
 </head>
@@ -147,44 +360,239 @@
     <a href="/#waitlist" class="nav-cta">Join Waitlist</a>
   </div>
 
-  <!-- Content -->
-  <div class="page-content">
-    <h1>Support</h1>
-    <p class="subtitle">We're here to help you get the most out of Nassau.</p>
+  <!-- Hero -->
+  <section class="page-hero">
+    <div class="page-hero-glow"></div>
+    <div class="section-label animate">Support</div>
+    <h1 class="animate animate-d1">We've got you<br>covered</h1>
+    <p class="animate animate-d2">Find answers to common questions, or reach out and we'll get back to you fast.</p>
+  </section>
 
-    <h2>FAQ</h2>
+  <!-- FAQ -->
+  <section class="faq-section">
+    <div class="container">
 
-    <div class="faq-item">
-      <strong>How do I settle up after a round?</strong>
-      <p>When a game is completed, tap "Settle Up" on the game detail screen. Nassau will calculate what each player owes and provide one-tap Venmo links for easy payment.</p>
+      <!-- Getting Started -->
+      <div class="faq-group reveal">
+        <div class="faq-group-header">
+          <div class="faq-group-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 16 12 12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </div>
+          <h2>Getting Started</h2>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>How do I create a game?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>Tap the <code>+</code> button in the tab bar. Choose your game type, set your bet amount and press limits, select the course, then invite friends. The whole setup takes about 30 seconds.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>How do I add friends?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>Go to your Profile tab, tap Friends, then share your unique 6-character friend code or enter a friend's code to connect. Once added, friends automatically appear when you create new games.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>Can I join a game that's already started?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>Yes. Players can late-join any game before hole 2 scoring begins. The game creator can add players from the game lobby, and all bets will be calculated from hole 1.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Betting & Scoring -->
+      <div class="faq-group reveal">
+        <div class="faq-group-header">
+          <div class="faq-group-icon">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+          <h2>Betting & Scoring</h2>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>How do I settle up after a round?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>When all 18 holes are scored, tap "Settle Up" on the game screen. Nassau calculates exactly what each player owes, then generates one-tap Venmo deep links so you can pay or request money instantly.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>How do press bets work?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>A press creates a new bet within the current region (front 9, back 9, or overall) starting from the current hole. It's essentially a double-or-nothing side bet. You can press any active bet, and Nassau handles all the payout math automatically.</p>
+              <p>Press limits are configurable when creating the game (1, 2, 3, or unlimited per region) so nobody gets in over their head.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>What bet types are supported?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>Nassau currently supports the classic Nassau format: front 9, back 9, and overall 18, with optional press bets on each. Skins, Wolf, and Match Play are coming soon.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nassau Pro -->
+      <div class="faq-group reveal">
+        <div class="faq-group-header">
+          <div class="faq-group-icon">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <h2>Nassau Pro</h2>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>What is Nassau Pro?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>Nassau Pro is our premium subscription that unlocks AI-powered betting intelligence. It includes pre-round course scouting, real-time press advice with win-rate calculations, opponent matchup analytics, group leaderboards, and shareable stats cards.</p>
+              <p>Think of it this way: the free version is the tool. Pro is the edge. <a href="pro.html">Learn more</a></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>How much does Pro cost?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>$4.99/month, $29.99/year (save 50%), or $79.99 for lifetime access. All plans unlock every Pro feature instantly. Cancel anytime.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>How do I cancel my subscription?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>Open the Settings app on your iPhone, tap your name at the top, then tap Subscriptions. Find Nassau and tap Cancel Subscription. You'll keep Pro access through the end of your current billing period.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account & Privacy -->
+      <div class="faq-group reveal">
+        <div class="faq-group-header">
+          <div class="faq-group-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <h2>Account & Privacy</h2>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>How do I delete my account?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>Email us at <a href="mailto:support@nassauapp.com">support@nassauapp.com</a> with the subject "Delete Account" and we'll permanently delete your account and all associated data within 30 days.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>What data does Nassau collect?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>Only what's needed to run the app: your email, display name, game scores, and betting data. We never sell your data to third parties. For full details, see our <a href="privacy.html">Privacy Policy</a>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <h3>Is my payment information secure?</h3>
+            <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <p>Nassau never stores credit card information. All subscription payments are processed securely through Apple's App Store. Settlement payments are handled directly through Venmo's own app.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
+  </section>
 
-    <div class="faq-item">
-      <strong>How do I add friends?</strong>
-      <p>Go to your Profile, tap Friends, then share your friend code or enter a friend's code to connect. Friends appear when creating new games.</p>
-    </div>
+  <!-- Contact -->
+  <section class="contact-section reveal">
+    <div class="container">
+      <div class="contact-grid">
 
-    <div class="faq-item">
-      <strong>What is Nassau Pro?</strong>
-      <p>Nassau Pro is our premium subscription that unlocks AI-powered features including press advice, matchup analytics, and post-round analysis to help you bet smarter.</p>
-    </div>
+        <div class="contact-card">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <h3>Email Support</h3>
+          <p>Have a question or issue? We typically respond within 24 hours.</p>
+          <a href="mailto:support@nassauapp.com" class="contact-link">
+            <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            support@nassauapp.com
+          </a>
+        </div>
 
-    <div class="faq-item">
-      <strong>How do I cancel my subscription?</strong>
-      <p>Open the Settings app on your iPhone, tap your name at the top, then Subscriptions. Find Nassau and tap Cancel Subscription.</p>
-    </div>
+        <div class="contact-card contact-card-alt">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+          </div>
+          <h3>Feature Requests</h3>
+          <p>Got an idea that would make Nassau better? We're all ears.</p>
+          <a href="mailto:hello@nassauapp.com" class="contact-link">
+            <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            hello@nassauapp.com
+          </a>
+        </div>
 
-    <div class="faq-item">
-      <strong>How do I delete my account?</strong>
-      <p>Contact us at the email below and we'll permanently delete your account and all associated data within 30 days.</p>
+      </div>
     </div>
-
-    <div class="contact-card">
-      <h3>Still need help?</h3>
-      <p>Reach out and we'll get back to you as soon as possible.</p>
-      <a href="mailto:support@nassauapp.com" class="email-link">Email support@nassauapp.com</a>
-    </div>
-  </div>
+  </section>
 
   <!-- Footer -->
   <footer>
@@ -218,6 +626,50 @@
       </div>
     </div>
   </footer>
+
+  <script>
+    // ─── Accordion Toggle ─────────────────────────────
+    function toggleFaq(el) {
+      var item = el.parentElement;
+      var wrapper = item.querySelector('.faq-answer-wrapper');
+      var inner = wrapper.querySelector('.faq-answer');
+      var isOpen = item.classList.contains('open');
+
+      // Close all other open items
+      document.querySelectorAll('.faq-item.open').forEach(function(openItem) {
+        if (openItem !== item) {
+          openItem.classList.remove('open');
+          openItem.querySelector('.faq-answer-wrapper').style.maxHeight = '0';
+        }
+      });
+
+      if (isOpen) {
+        item.classList.remove('open');
+        wrapper.style.maxHeight = '0';
+      } else {
+        item.classList.add('open');
+        wrapper.style.maxHeight = inner.scrollHeight + 'px';
+      }
+    }
+
+    // ─── Scroll Reveal ────────────────────────────────
+    var revealElements = document.querySelectorAll('.reveal');
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.12,
+      rootMargin: '0px 0px -40px 0px'
+    });
+
+    revealElements.forEach(function(el) {
+      revealObserver.observe(el);
+    });
+  </script>
 
 </body>
 </html>
